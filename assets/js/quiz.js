@@ -1,0 +1,298 @@
+// ─── Proteção e carregamento de sessão ─────────────────────────────────────────
+if (!isLoggedIn()) window.location.href = 'index.html';
+
+const session = JSON.parse(sessionStorage.getItem('quiz_session') || 'null');
+if (!session) window.location.href = 'home.html';
+
+const questions  = session.questions;
+const sessionId  = session.sessionId;
+const totalCount = session.count;
+
+let currentIndex = 0;
+let elapsed      = 0;     // segundos
+let timerInterval = null;
+let answers      = [];    // [{questionId, selected}]
+let answerGiven  = false;
+
+// ─── Monta label da categoria ─────────────────────────────────────────────────
+document.getElementById('quiz-category-label').textContent =
+  (session.categoryLabel || CATEGORY_LABELS[session.category] || 'ENEM Speedrun').toUpperCase();
+document.getElementById('q-total').textContent = totalCount;
+
+// ─── Cronômetro ───────────────────────────────────────────────────────────────
+function startTimer() {
+  timerInterval = setInterval(() => {
+    elapsed++;
+    const el = document.getElementById('timer');
+    el.textContent = formatTime(elapsed);
+
+    // Alertas visuais de tempo
+    const limit = totalCount * 3 * 60; // 3 min por questão referência
+    if (elapsed > limit * 0.85) el.className = 'timer danger';
+    else if (elapsed > limit * 0.6) el.className = 'timer warning';
+    else el.className = 'timer';
+  }, 1000);
+}
+
+function stopTimer() {
+  clearInterval(timerInterval);
+}
+
+// ─── Renderiza questão atual ──────────────────────────────────────────────────
+function renderQuestion(index) {
+  const q = questions[index];
+  answerGiven = false;
+
+  // Meta
+  document.getElementById('q-current').textContent = index + 1;
+  document.getElementById('q-num').textContent = `Questão ${index + 1}`;
+  document.getElementById('q-year').textContent = q.ano ? `ENEM ${q.ano}` : 'ENEM';
+  document.getElementById('q-disciplina').textContent = CATEGORY_LABELS[q.disciplina] || q.disciplina || '';
+
+  // Progresso
+  const pct = Math.round(((index) / totalCount) * 100);
+  document.getElementById('progress-fill').style.width = pct + '%';
+  document.getElementById('progress-text').textContent = `${pct}% concluído`;
+
+  // Contexto
+  const ctxEl = document.getElementById('q-context');
+  if (q.contexto && q.contexto.trim()) {
+    ctxEl.style.display = 'block';
+    ctxEl.innerHTML = q.contexto;
+  } else {
+    ctxEl.style.display = 'none';
+  }
+
+  // Imagem
+  const imgWrap = document.getElementById('q-image');
+  const imgEl   = document.getElementById('q-img');
+  const imgUrl  = q.imagens && q.imagens[0];
+  if (imgUrl) {
+    imgEl.src = imgUrl;
+    imgWrap.style.display = 'block';
+    imgEl.onerror = () => { imgWrap.style.display = 'none'; };
+  } else {
+    imgWrap.style.display = 'none';
+  }
+
+  // Enunciado
+  document.getElementById('q-text').innerHTML = q.enunciado || '';
+
+  // Alternativas
+  const altContainer = document.getElementById('alternatives');
+  altContainer.innerHTML = '';
+  (q.alternativas || []).forEach(alt => {
+    const btn = document.createElement('button');
+    btn.className = 'alt-btn';
+    btn.dataset.letra = alt.letra;
+    btn.innerHTML = `
+      <span class="alt-letter">${alt.letra}</span>
+      ${alt.imgUrl
+        ? `<img src="${alt.imgUrl}" alt="Alternativa ${alt.letra}" style="max-width:100%;max-height:120px;object-fit:contain;" onerror="this.style.display='none'">`
+        : `<span>${alt.texto}</span>`
+      }
+    `;
+    btn.onclick = () => selectAnswer(alt.letra, q.id);
+    altContainer.appendChild(btn);
+  });
+
+  // Botão próximo
+  const btnNext = document.getElementById('btn-next');
+  btnNext.disabled = true;
+  btnNext.textContent = index === totalCount - 1 ? 'Finalizar ✓' : 'Próxima →';
+
+  // Animação
+  const card = document.getElementById('question-card');
+  card.style.animation = 'none';
+  void card.offsetWidth;
+  card.style.animation = 'fadeIn 0.3s ease forwards';
+
+  // Scroll ao topo
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ─── Seleciona alternativa ────────────────────────────────────────────────────
+function selectAnswer(letra, questionId) {
+  // Se já respondeu, remove a resposta anterior para permitir troca
+  if (answerGiven) {
+    const existingIndex = answers.findIndex(a => a.questionId === questionId);
+    if (existingIndex !== -1) {
+      answers.splice(existingIndex, 1);
+    }
+  }
+  answerGiven = true;
+
+  // Marca visualmente
+  document.querySelectorAll('.alt-btn').forEach(btn => {
+    btn.classList.toggle('selected', btn.dataset.letra === letra);
+  });
+
+  // Registra resposta
+  answers.push({ questionId, selected: letra });
+
+  // Habilita próximo
+  document.getElementById('btn-next').disabled = false;
+}
+
+// ─── Avança questão ───────────────────────────────────────────────────────────
+async function nextQuestion() {
+  // Se não respondeu, registra como em branco
+  if (!answerGiven) {
+    answers.push({ questionId: questions[currentIndex].id, selected: null });
+  }
+
+  currentIndex++;
+
+  if (currentIndex < totalCount) {
+    renderQuestion(currentIndex);
+  } else {
+    await finishQuiz();
+  }
+}
+
+// ─── Finaliza e envia resultado ───────────────────────────────────────────────
+async function finishQuiz() {
+  stopTimer();
+  document.getElementById('quiz-screen').style.display = 'none';
+
+  // Spinner enquanto envia
+  document.getElementById('result-screen').style.display = 'block';
+  document.getElementById('result-screen').innerHTML = `
+    <div style="text-align:center;padding:60px 0;">
+      <div class="spinner spinner-blue" style="width:48px;height:48px;border-width:5px;margin:0 auto 20px;"></div>
+      <p style="color:var(--azul-primario);font-weight:600;font-size:1.1rem;">Calculando resultado...</p>
+    </div>
+  `;
+
+  try {
+    const result = await apiRequest('/api/quiz/submit', {
+      method: 'POST',
+      body: JSON.stringify({ sessionId, answers, timeSeconds: elapsed }),
+    });
+
+    showResult(result);
+
+    // Exibe conquistas desbloqueadas (após pequeno delay para o resultado aparecer primeiro)
+    if (result.newAchievements && result.newAchievements.length > 0) {
+      result.newAchievements.forEach((ach, i) => {
+        setTimeout(() => showAchievementToast(ach), 1200 + i * 1800);
+      });
+    }
+  } catch (err) {
+    document.getElementById('result-screen').innerHTML = `
+      <div class="alert alert-error">Erro ao enviar resultado: ${err.message}</div>
+      <div style="text-align:center;margin-top:20px;">
+        <a href="home.html" class="btn btn-primary">Voltar ao início</a>
+      </div>
+    `;
+  }
+}
+
+// ─── Exibe tela de resultado ──────────────────────────────────────────────────
+function showResult(result) {
+  const pct = result.percentage;
+  const emoji = pct >= 80 ? '🏆' : pct >= 60 ? '🎯' : pct >= 40 ? '📚' : '💪';
+  const msg = pct >= 80
+    ? 'Excelente desempenho!'
+    : pct >= 60 ? 'Bom resultado!'
+    : pct >= 40 ? 'Continue praticando!'
+    : 'Não desista, continue estudando!';
+
+  document.getElementById('result-screen').innerHTML = `
+    <div class="result-hero">
+      <div style="font-size:3rem;margin-bottom:12px">${emoji}</div>
+      <h2>Speedrun concluída!</h2>
+      <p>${CATEGORY_LABELS[session.category] || session.category} — ${result.total} questões</p>
+    </div>
+    <div class="result-stats">
+      <div class="result-stat">
+        <div class="rs-value">${result.correct}/${result.total}</div>
+        <div class="rs-label">Acertos</div>
+      </div>
+      <div class="result-stat">
+        <div class="rs-value">${pct}%</div>
+        <div class="rs-label">Aproveitamento</div>
+      </div>
+      <div class="result-stat">
+        <div class="rs-value">${formatTime(result.timeSeconds)}</div>
+        <div class="rs-label">Tempo total</div>
+      </div>
+      <div class="result-stat">
+        <div class="rs-value">#${result.position}</div>
+        <div class="rs-label">Posição no ranking</div>
+      </div>
+    </div>
+    <div class="gabarito-section">
+      <h3>📋 Gabarito detalhado</h3>
+      <div class="gabarito-grid" id="gabarito-grid"></div>
+    </div>
+    <div class="result-actions">
+      <a href="home.html" class="btn btn-outline btn-lg">← Nova speedrun</a>
+      <a href="ranking.html" class="btn btn-primary btn-lg">Ver ranking 🏆</a>
+    </div>
+  `;
+
+  // Preenche gabarito
+  const grid = document.getElementById('gabarito-grid');
+  result.details.forEach((d, i) => {
+    const div = document.createElement('div');
+    div.className = `gab-item ${d.correct ? 'ok' : 'fail'}`;
+    div.innerHTML = `
+      <div class="gab-q">Q${i + 1}</div>
+      <div class="gab-ans">${d.selected || '—'} ${d.correct ? '✓' : '✗'}</div>
+      ${!d.correct ? `<div style="font-size:0.68rem;opacity:0.8">Gab: ${d.gabarito}</div>` : ''}
+    `;
+    grid.appendChild(div);
+  });
+
+  // Limpa sessão
+  sessionStorage.removeItem('quiz_session');
+
+  // Barra de progresso 100%
+  const fill = document.querySelector('.progress-bar-fill');
+  if (fill) fill.style.width = '100%';
+}
+
+// ─── Inicia quiz ──────────────────────────────────────────────────────────────
+startTimer();
+renderQuestion(0);
+
+// ─── Botão próximo ───────────────────────────────────────────────────────────
+document.getElementById('btn-next').onclick = nextQuestion;
+
+// ─── Toast de conquista estilo Steam ─────────────────────────────────────────
+function showAchievementToast(ach) {
+  // Garante que o container existe
+  let container = document.getElementById('achievement-container');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'achievement-container';
+    document.body.appendChild(container);
+  }
+
+  const toast = document.createElement('div');
+  toast.className = 'achievement-toast';
+  toast.innerHTML = `
+    <div class="ach-header">🎮 Conquista desbloqueada!</div>
+    <div class="ach-body">
+      <div class="ach-icon">${ach.icon}</div>
+      <div class="ach-info">
+        <div class="ach-title">${ach.title}</div>
+        <div class="ach-desc">${ach.description}</div>
+      </div>
+    </div>
+  `;
+
+  container.appendChild(toast);
+
+  // Anima entrada
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => toast.classList.add('show'));
+  });
+
+  // Remove após 5 segundos
+  setTimeout(() => {
+    toast.classList.remove('show');
+    toast.addEventListener('transitionend', () => toast.remove(), { once: true });
+  }, 5000);
+}

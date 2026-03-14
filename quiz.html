@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ENEM Speedrun — Prova</title>
+  <link rel="stylesheet" href="assets/css/style.css" />
+  <style>
+    body { background: var(--cinza-bg); }
+
+    /* ─── Barra de progresso fixa ──────────────── */
+    .quiz-topbar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--branco);
+      border-bottom: 3px solid var(--azul-primario);
+      padding: 12px 0;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .quiz-topbar-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+    }
+
+    .quiz-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .quiz-info .qi-title {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--azul-primario);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .quiz-info .qi-progress {
+      font-size: 0.9rem;
+      color: var(--texto-medio);
+    }
+
+    .quiz-info .qi-progress strong {
+      color: var(--azul-escuro);
+      font-size: 1.1rem;
+    }
+
+    /* Cronômetro */
+    .timer-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .timer-label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: var(--cinza-medio);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    .timer {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--azul-escuro);
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 0.02em;
+      line-height: 1;
+    }
+
+    .timer.warning { color: #E05C00; }
+    .timer.danger  { color: var(--erro); animation: pulse 1s ease infinite; }
+
+    @keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.04)} }
+
+    /* Barra de progresso */
+    .progress-bar-wrap {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .progress-bar-track {
+      height: 8px;
+      background: var(--cinza-borda);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--azul-primario), var(--azul-claro));
+      border-radius: 4px;
+      transition: width 0.4s ease;
+    }
+
+    .progress-text {
+      font-size: 0.78rem;
+      color: var(--cinza-medio);
+      text-align: right;
+    }
+
+    /* ─── Questão ──────────────────────────────── */
+    .question-card {
+      background: var(--branco);
+      border: 1px solid var(--cinza-borda);
+      border-radius: var(--radius-lg);
+      padding: 32px;
+      margin-top: 24px;
+      box-shadow: var(--sombra-card);
+    }
+
+    .question-meta {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    .question-number {
+      background: var(--azul-primario);
+      color: var(--branco);
+      font-size: 0.85rem;
+      font-weight: 700;
+      padding: 4px 14px;
+      border-radius: 20px;
+    }
+
+    .question-badge {
+      background: #E8F0FF;
+      color: var(--azul-primario);
+      font-size: 0.78rem;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 20px;
+    }
+
+    .question-context {
+      background: var(--cinza-bg);
+      border-left: 4px solid var(--azul-primario);
+      padding: 14px 18px;
+      border-radius: 0 var(--radius) var(--radius) 0;
+      font-size: 0.92rem;
+      color: var(--texto-medio);
+      margin-bottom: 20px;
+      line-height: 1.65;
+    }
+
+    .question-image {
+      margin-bottom: 20px;
+      border-radius: var(--radius);
+      overflow: hidden;
+      border: 1px solid var(--cinza-borda);
+    }
+
+    .question-image img {
+      width: 100%;
+      max-height: 400px;
+      object-fit: contain;
+      background: var(--cinza-bg);
+    }
+
+    .question-text {
+      font-size: 1rem;
+      color: var(--texto-escuro);
+      line-height: 1.75;
+      margin-bottom: 28px;
+    }
+
+    /* ─── Alternativas ─────────────────────────── */
+    .alternatives {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .alt-btn {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      padding: 14px 18px;
+      border: 2px solid var(--cinza-borda);
+      border-radius: var(--radius);
+      background: var(--branco);
+      cursor: pointer;
+      text-align: left;
+      font-family: var(--font);
+      font-size: 0.93rem;
+      color: var(--texto-escuro);
+      line-height: 1.5;
+      transition: all 0.15s ease;
+      width: 100%;
+    }
+
+    .alt-btn:hover:not(:disabled) {
+      border-color: var(--azul-primario);
+      background: #F0F5FF;
+    }
+
+    .alt-btn.selected {
+      border-color: var(--azul-primario);
+      background: #E8F0FF;
+      color: var(--azul-escuro);
+    }
+
+    .alt-btn.correct {
+      border-color: var(--verde);
+      background: var(--verde-claro);
+      color: #0a4a0a;
+    }
+
+    .alt-btn.wrong {
+      border-color: var(--erro);
+      background: #FFF0F0;
+      color: #7a0000;
+    }
+
+    .alt-letter {
+      flex-shrink: 0;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background: var(--cinza-borda);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.88rem;
+      margin-top: 1px;
+    }
+
+    .alt-btn.selected .alt-letter { background: var(--azul-primario); color: var(--branco); }
+    .alt-btn.correct  .alt-letter { background: var(--verde); color: var(--branco); }
+    .alt-btn.wrong    .alt-letter { background: var(--erro); color: var(--branco); }
+
+    /* ─── Botão próxima questão ──────────────────── */
+    .quiz-nav {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 24px;
+      gap: 12px;
+    }
+
+    /* ─── Tela de resultado ─────────────────────── */
+    #result-screen { display: none; }
+
+    .result-hero {
+      background: linear-gradient(135deg, var(--azul-primario) 0%, var(--azul-escuro) 100%);
+      border-radius: var(--radius-lg);
+      padding: 36px;
+      color: var(--branco);
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .result-hero h2 { font-size: 1.6rem; font-weight: 700; margin-bottom: 8px; }
+    .result-hero p  { color: rgba(255,255,255,0.8); }
+
+    .result-stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+      margin-bottom: 24px;
+    }
+
+    .result-stat {
+      background: var(--branco);
+      border: 1px solid var(--cinza-borda);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      text-align: center;
+      box-shadow: var(--sombra-card);
+    }
+
+    .result-stat .rs-value {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--azul-primario);
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+
+    .result-stat .rs-label { font-size: 0.82rem; color: var(--cinza-medio); }
+
+    .result-actions {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    /* ─── Gabarito ────────────────────────────────── */
+    .gabarito-section {
+      background: var(--branco);
+      border: 1px solid var(--cinza-borda);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      margin-bottom: 24px;
+      box-shadow: var(--sombra-card);
+    }
+
+    .gabarito-section h3 { font-size: 1rem; font-weight: 700; color: var(--azul-escuro); margin-bottom: 16px; }
+
+    .gabarito-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+      gap: 8px;
+    }
+
+    .gab-item {
+      padding: 8px;
+      border-radius: var(--radius);
+      text-align: center;
+      font-size: 0.82rem;
+      font-weight: 700;
+      border: 2px solid;
+    }
+
+    .gab-item.ok   { background: var(--verde-claro); color: var(--verde); border-color: var(--verde); }
+    .gab-item.fail { background: #FFF0F0; color: var(--erro); border-color: var(--erro); }
+
+    .gab-item .gab-q   { font-size: 0.72rem; font-weight: 400; margin-bottom: 2px; }
+    .gab-item .gab-ans { font-size: 1rem; }
+
+    @media (max-width: 700px) {
+      .result-stats { grid-template-columns: 1fr 1fr; }
+      .question-card { padding: 20px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Barra gov.br -->
+<div class="gov-bar">
+  <div class="container">
+    <div class="gov-logo">🇧🇷 <span>gov.br</span> &nbsp;|&nbsp; Ministério da Educação</div>
+  </div>
+</div>
+
+<!-- Quiz topbar -->
+<div class="quiz-topbar">
+  <div class="container">
+    <div class="quiz-topbar-inner">
+      <div class="quiz-info">
+        <div class="qi-title" id="quiz-category-label">ENEM Speedrun</div>
+        <div class="qi-progress">Questão <strong id="q-current">1</strong> de <strong id="q-total">10</strong></div>
+      </div>
+      <div class="progress-bar-wrap">
+        <div class="progress-bar-track">
+          <div class="progress-bar-fill" id="progress-fill" style="width:0%"></div>
+        </div>
+        <div class="progress-text" id="progress-text">0% concluído</div>
+      </div>
+      <div class="timer-wrap">
+        <div class="timer-label">⏱ Tempo</div>
+        <div class="timer" id="timer">00:00</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<main>
+  <div class="container">
+
+    <!-- Tela da questão -->
+    <div id="quiz-screen">
+      <div class="question-card fade-in" id="question-card">
+        <div class="question-meta">
+          <span class="question-number" id="q-num">Questão 1</span>
+          <span class="question-badge" id="q-year">ENEM 2022</span>
+          <span class="question-badge" id="q-disciplina"></span>
+        </div>
+        <div class="question-context" id="q-context" style="display:none"></div>
+        <div class="question-image" id="q-image" style="display:none">
+          <img id="q-img" src="" alt="Imagem da questão" />
+        </div>
+        <div class="question-text" id="q-text"></div>
+        <div class="alternatives" id="alternatives"></div>
+      </div>
+
+      <div class="quiz-nav">
+        <button class="btn btn-primary btn-lg" id="btn-next" onclick="nextQuestion()" disabled>
+          Próxima →
+        </button>
+      </div>
+    </div>
+
+    <!-- Tela de resultado -->
+    <div id="result-screen" class="fade-in">
+      <div class="result-hero">
+        <div style="font-size:3rem;margin-bottom:12px" id="result-emoji">🎉</div>
+        <h2 id="result-title">Speedrun concluída!</h2>
+        <p id="result-subtitle"></p>
+      </div>
+
+      <div class="result-stats">
+        <div class="result-stat">
+          <div class="rs-value" id="rs-correct">—</div>
+          <div class="rs-label">Acertos</div>
+        </div>
+        <div class="result-stat">
+          <div class="rs-value" id="rs-percent">—</div>
+          <div class="rs-label">Aproveitamento</div>
+        </div>
+        <div class="result-stat">
+          <div class="rs-value" id="rs-time">—</div>
+          <div class="rs-label">Tempo total</div>
+        </div>
+        <div class="result-stat">
+          <div class="rs-value" id="rs-position">—</div>
+          <div class="rs-label">Posição no ranking</div>
+        </div>
+      </div>
+
+      <div class="gabarito-section">
+        <h3>📋 Gabarito detalhado</h3>
+        <div class="gabarito-grid" id="gabarito-grid"></div>
+      </div>
+
+      <div class="result-actions">
+        <a href="home.html" class="btn btn-outline btn-lg">← Nova speedrun</a>
+        <a href="ranking.html" class="btn btn-primary btn-lg">Ver ranking 🏆</a>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<script src="assets/js/config.js"></script>
+<script src="assets/js/quiz.js"></script>
+</body>
+</html>

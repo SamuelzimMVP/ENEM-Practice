@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ENEM Speedrun — Início</title>
+  <link rel="stylesheet" href="assets/css/style.css" />
+  <style>
+    .welcome-banner {
+      background: linear-gradient(135deg, var(--azul-primario) 0%, var(--azul-escuro) 100%);
+      color: var(--branco);
+      padding: 28px 0;
+      margin-bottom: 32px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+    }
+
+    .welcome-banner h2 { font-size: 1.4rem; font-weight: 700; margin-bottom: 4px; }
+    .welcome-banner p  { font-size: 0.95rem; color: rgba(255,255,255,0.8); }
+    .welcome-banner span { color: var(--amarelo); }
+
+    /* ─── Seção de seleção ─────────────────────────── */
+    .section-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--azul-primario);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .section-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--cinza-borda);
+    }
+
+    /* ─── Grid de grupos ───────────────────────────── */
+    .groups-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin-bottom: 32px;
+    }
+
+    .group-card {
+      background: var(--branco);
+      border: 2px solid var(--cinza-borda);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      cursor: pointer;
+      transition: all var(--transition);
+      text-align: center;
+    }
+
+    .group-card:hover {
+      border-color: var(--azul-primario);
+      box-shadow: var(--sombra-card-hover);
+      transform: translateY(-2px);
+    }
+
+    .group-card.selected {
+      border-color: var(--azul-primario);
+      background: #E8F0FF;
+    }
+
+    .group-card .gc-icon { font-size: 2rem; margin-bottom: 8px; }
+    .group-card .gc-title { font-size: 0.95rem; font-weight: 700; color: var(--azul-escuro); margin-bottom: 4px; }
+    .group-card .gc-desc  { font-size: 0.78rem; color: var(--cinza-medio); }
+
+    /* ─── Grid de matérias individuais ─────────────── */
+    .subjects-section {
+      margin-bottom: 32px;
+    }
+
+    .subjects-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    .subject-area-tab {
+      padding: 6px 16px;
+      border: 1px solid var(--cinza-borda);
+      border-radius: 20px;
+      font-size: 0.83rem;
+      font-weight: 600;
+      cursor: pointer;
+      background: var(--branco);
+      color: var(--texto-medio);
+      transition: all var(--transition);
+      font-family: var(--font);
+    }
+
+    .subject-area-tab:hover { border-color: var(--azul-primario); color: var(--azul-primario); }
+    .subject-area-tab.active { background: var(--azul-primario); color: var(--branco); border-color: var(--azul-primario); }
+
+    .subjects-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 10px;
+    }
+
+    .subject-chip {
+      padding: 10px 14px;
+      border: 1.5px solid var(--cinza-borda);
+      border-radius: var(--radius);
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      background: var(--branco);
+      color: var(--texto-escuro);
+      text-align: center;
+      transition: all var(--transition);
+      font-family: var(--font);
+    }
+
+    .subject-chip:hover { border-color: var(--azul-primario); color: var(--azul-primario); }
+    .subject-chip.selected { background: var(--azul-primario); color: var(--branco); border-color: var(--azul-primario); }
+
+    /* ─── Seleção de quantidade ─────────────────────── */
+    .count-grid {
+      display: flex;
+      gap: 14px;
+      margin-bottom: 32px;
+    }
+
+    .count-card {
+      flex: 1;
+      background: var(--branco);
+      border: 2px solid var(--cinza-borda);
+      border-radius: var(--radius-lg);
+      padding: 20px 14px;
+      cursor: pointer;
+      transition: all var(--transition);
+      text-align: center;
+    }
+
+    .count-card:hover { border-color: var(--azul-primario); box-shadow: var(--sombra-card-hover); }
+    .count-card.selected { border-color: var(--verde); background: var(--verde-claro); }
+
+    .count-card .cc-number { font-size: 2.2rem; font-weight: 700; color: var(--azul-escuro); line-height: 1; }
+    .count-card .cc-label  { font-size: 0.82rem; color: var(--cinza-medio); margin-top: 4px; }
+    .count-card .cc-time   { font-size: 0.78rem; color: var(--verde); font-weight: 600; margin-top: 6px; }
+
+    /* ─── Barra de start ────────────────────────────── */
+    .start-bar {
+      background: var(--branco);
+      border: 1px solid var(--cinza-borda);
+      border-radius: var(--radius-lg);
+      padding: 20px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      box-shadow: var(--sombra-card);
+    }
+
+    .start-summary { font-size: 0.92rem; color: var(--texto-medio); }
+    .start-summary strong { color: var(--azul-escuro); }
+
+    @media (max-width: 700px) {
+      .groups-grid { grid-template-columns: 1fr 1fr; }
+      .count-grid  { flex-direction: column; }
+      .start-bar   { flex-direction: column; }
+      .btn-lg      { width: 100%; }
+    }
+
+    /* ─── Conquistas ────────────────────────────── */
+    .achievements-section { margin-top: 48px; margin-bottom: 48px; }
+    .achievements-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 16px;
+      margin-top: 16px;
+    }
+    .achievement-badge {
+      background: var(--branco);
+      border: 1px solid var(--cinza-borda);
+      border-radius: var(--radius-lg);
+      padding: 16px 12px;
+      text-align: center;
+      transition: all var(--transition);
+      opacity: 0.5;
+      filter: grayscale(1);
+    }
+    .achievement-badge.unlocked {
+      opacity: 1;
+      filter: grayscale(0);
+      border-color: var(--amarelo);
+      box-shadow: 0 4px 12px rgba(255, 205, 7, 0.2);
+    }
+    .badge-icon { font-size: 2.2rem; margin-bottom: 8px; }
+    .badge-title { font-size: 0.85rem; font-weight: 700; color: var(--azul-escuro); line-height: 1.2; }
+    .badge-date { font-size: 0.7rem; color: var(--cinza-medio); margin-top: 4px; }
+  </style>
+</head>
+<body>
+
+<!-- Barra gov.br -->
+<div class="gov-bar">
+  <div class="container">
+    <div class="gov-logo">🇧🇷 <span>gov.br</span> &nbsp;|&nbsp; Ministério da Educação</div>
+  </div>
+</div>
+
+<!-- Header -->
+<header class="site-header">
+  <div class="container">
+    <div class="header-inner">
+      <a href="home.html" class="brand">
+        <div class="brand-icon">
+          <svg viewBox="0 0 24 24"><path d="M12 2L2 7v10l10 5 10-5V7L12 2zM12 4.2L20 8v8l-8 4-8-4V8l8-3.8z"/></svg>
+        </div>
+        <div class="brand-text">
+          <span class="brand-title">ENEM Speedrun</span>
+          <span class="brand-subtitle">Ministério da Educação</span>
+        </div>
+      </a>
+      <nav>
+        <a href="home.html" class="active">Início</a>
+        <a href="ranking.html">Ranking</a>
+      </nav>
+      <div style="display:flex;align-items:center;gap:10px">
+        <span id="user-name" style="color:rgba(255,255,255,0.85);font-size:0.88rem;"></span>
+        <button class="btn-logout" onclick="logout()">Sair</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- Welcome banner -->
+<div class="welcome-banner">
+  <div class="container">
+    <h2>Olá, <span id="banner-name">estudante</span>! 👋</h2>
+    <p>Selecione a área e a quantidade de questões para iniciar sua speedrun.</p>
+  </div>
+</div>
+
+<main>
+  <div class="container">
+
+    <!-- Grupos principais -->
+    <div class="section-label">Modo de prova</div>
+    <div class="groups-grid">
+      <div class="group-card" data-category="completa" onclick="selectGroup(this)">
+        <div class="gc-icon">📋</div>
+        <div class="gc-title">Prova Completa</div>
+        <div class="gc-desc">Todas as 4 áreas do ENEM</div>
+      </div>
+      <div class="group-card" data-category="humanas" onclick="selectGroup(this)">
+        <div class="gc-icon">🌍</div>
+        <div class="gc-title">Humanas</div>
+        <div class="gc-desc">Linguagens + C. Humanas</div>
+      </div>
+      <div class="group-card" data-category="exatas" onclick="selectGroup(this)">
+        <div class="gc-icon">🔬</div>
+        <div class="gc-title">Exatas</div>
+        <div class="gc-desc">C. Natureza + Matemática</div>
+      </div>
+    </div>
+
+
+    <!-- Quantidade -->
+    <div class="section-label">Número de questões</div>
+    <div class="count-grid">
+      <div class="count-card" data-count="10" onclick="selectCount(this)">
+        <div class="cc-number">10</div>
+        <div class="cc-label">questões</div>
+        <div class="cc-time">⚡ Rápida (~15 min)</div>
+      </div>
+      <div class="count-card" data-count="20" onclick="selectCount(this)">
+        <div class="cc-number">20</div>
+        <div class="cc-label">questões</div>
+        <div class="cc-time">🏃 Padrão (~30 min)</div>
+      </div>
+      <div class="count-card" data-count="30" onclick="selectCount(this)">
+        <div class="cc-number">30</div>
+        <div class="cc-label">questões</div>
+        <div class="cc-time">🎯 Desafio (~45 min)</div>
+      </div>
+    </div>
+
+    <!-- Start -->
+    <div class="start-bar">
+      <div class="start-summary" id="start-summary">
+        Selecione uma área e quantidade para continuar.
+      </div>
+      <button class="btn btn-green btn-lg" id="btn-start" onclick="startQuiz()" disabled>
+        Iniciar Speedrun ▶
+      </button>
+    </div>
+
+    <!-- Conquistas -->
+    <div class="achievements-section">
+      <div class="section-label">Minhas Conquistas 🎮</div>
+      <div id="achievements-grid" class="achievements-grid">
+        <!-- Populado via JS -->
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<footer>
+  <div class="container">
+    <strong>ENEM Speedrun</strong> — Projeto independente. Questões via <a href="https://enem.dev" target="_blank" style="color:#FFCD07">enem.dev</a>.
+  </div>
+</footer>
+
+<script src="assets/js/config.js"></script>
+<script src="assets/js/home.js"></script>
+</body>
+</html>

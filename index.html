@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ENEM Speedrun — Entrar</title>
+  <link rel="stylesheet" href="assets/css/style.css" />
+  <style>
+    body { display: flex; flex-direction: column; min-height: 100vh; background: var(--cinza-bg); }
+
+    .auth-wrap {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px;
+    }
+
+    .auth-container {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      max-width: 900px;
+      width: 100%;
+      background: var(--branco);
+      border-radius: var(--radius-lg);
+      box-shadow: 0 4px 24px rgba(0,0,0,0.12);
+      overflow: hidden;
+      border: 1px solid var(--cinza-borda);
+    }
+
+    .auth-hero {
+      background: var(--azul-primario);
+      padding: 48px 36px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 28px;
+    }
+
+    .auth-hero h1 {
+      font-size: 1.9rem;
+      font-weight: 700;
+      color: var(--branco);
+      line-height: 1.25;
+    }
+
+    .auth-hero h1 span { color: var(--amarelo); display: block; }
+
+    .auth-hero p {
+      color: rgba(255,255,255,0.8);
+      font-size: 0.95rem;
+      line-height: 1.6;
+    }
+
+    .auth-stats {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .auth-stat {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: rgba(255,255,255,0.12);
+      padding: 10px 14px;
+      border-radius: var(--radius);
+    }
+
+    .auth-stat-icon {
+      width: 36px;
+      height: 36px;
+      background: var(--amarelo);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-size: 1rem;
+    }
+
+    .auth-stat-text {
+      color: var(--branco);
+      font-size: 0.88rem;
+      font-weight: 600;
+    }
+
+    .auth-form-panel {
+      padding: 48px 40px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .auth-tabs {
+      display: flex;
+      gap: 0;
+      margin-bottom: 28px;
+      border-bottom: 2px solid var(--cinza-borda);
+    }
+
+    .auth-tab {
+      padding: 10px 20px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--cinza-medio);
+      cursor: pointer;
+      border: none;
+      background: none;
+      font-family: var(--font);
+      position: relative;
+      transition: color var(--transition);
+    }
+
+    .auth-tab.active {
+      color: var(--azul-primario);
+    }
+
+    .auth-tab.active::after {
+      content: '';
+      position: absolute;
+      bottom: -2px;
+      left: 0; right: 0;
+      height: 2px;
+      background: var(--azul-primario);
+    }
+
+    .auth-panel { display: none; }
+    .auth-panel.active { display: block; animation: fadeIn 0.3s ease; }
+
+    .auth-panel h2 {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--azul-escuro);
+      margin-bottom: 20px;
+    }
+
+    @media (max-width: 700px) {
+      .auth-container { grid-template-columns: 1fr; }
+      .auth-hero { display: none; }
+      .auth-form-panel { padding: 32px 24px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Barra do Governo Federal -->
+<div class="gov-bar">
+  <div class="container">
+    <div class="gov-logo">
+      🇧🇷 <span>gov.br</span> &nbsp;|&nbsp; Ministério da Educação
+    </div>
+  </div>
+</div>
+
+<div class="auth-wrap">
+  <div class="auth-container">
+
+    <!-- Hero lateral -->
+    <div class="auth-hero">
+      <div>
+        <h1>ENEM<span>Speedrun</span></h1>
+        <p>Teste seus conhecimentos com questões reais do ENEM e dispute o melhor tempo no ranking nacional.</p>
+      </div>
+      <div class="auth-stats">
+        <div class="auth-stat">
+          <div class="auth-stat-icon">📚</div>
+          <div class="auth-stat-text">+2.700 questões reais (2009–2023)</div>
+        </div>
+        <div class="auth-stat">
+          <div class="auth-stat-icon">⏱️</div>
+          <div class="auth-stat-text">Cronômetro em tempo real</div>
+        </div>
+        <div class="auth-stat">
+          <div class="auth-stat-icon">🏆</div>
+          <div class="auth-stat-text">Ranking por matéria e quantidade</div>
+        </div>
+        <div class="auth-stat">
+          <div class="auth-stat-icon">🎯</div>
+          <div class="auth-stat-text">10, 20 ou 30 questões por prova</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Formulário -->
+    <div class="auth-form-panel">
+      <div class="auth-tabs">
+        <button class="auth-tab active" onclick="showTab('login')">Entrar</button>
+        <button class="auth-tab" onclick="showTab('register')">Cadastrar</button>
+      </div>
+
+      <!-- Login -->
+      <div id="panel-login" class="auth-panel active">
+        <h2>Acesse sua conta</h2>
+        <div id="login-alert"></div>
+        <div class="form-group">
+          <label for="login-email">E-mail</label>
+          <input type="email" id="login-email" placeholder="seu@email.com" autocomplete="email" />
+        </div>
+        <div class="form-group">
+          <label for="login-password">Senha</label>
+          <input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password" />
+        </div>
+        <button class="btn btn-primary btn-full btn-lg" id="btn-login" onclick="handleLogin()">
+          Entrar
+        </button>
+      </div>
+
+      <!-- Cadastro -->
+      <div id="panel-register" class="auth-panel">
+        <h2>Criar nova conta</h2>
+        <div id="register-alert"></div>
+        <div class="form-group">
+          <label for="reg-nome">Nome completo</label>
+          <input type="text" id="reg-nome" placeholder="Seu nome" autocomplete="name" />
+        </div>
+        <div class="form-group">
+          <label for="reg-email">E-mail</label>
+          <input type="email" id="reg-email" placeholder="seu@email.com" autocomplete="email" />
+        </div>
+        <div class="form-group">
+          <label for="reg-password">Senha (mín. 6 caracteres)</label>
+          <input type="password" id="reg-password" placeholder="••••••••" autocomplete="new-password" />
+        </div>
+        <button class="btn btn-primary btn-full btn-lg" id="btn-register" onclick="handleRegister()">
+          Criar conta
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<footer>
+  <div class="container">
+    <strong>ENEM Speedrun</strong> — Projeto independente, não afiliado ao INEP/MEC.
+    Questões de domínio público via <a href="https://enem.dev" target="_blank" style="color:#FFCD07">enem.dev</a>.
+  </div>
+</footer>
+
+<script src="assets/js/config.js"></script>
+<script>
+  // Redireciona se já logado
+  if (isLoggedIn()) window.location.href = 'home.html';
+
+  function showTab(tab) {
+    document.querySelectorAll('.auth-tab').forEach((t, i) => {
+      t.classList.toggle('active', (i === 0 && tab === 'login') || (i === 1 && tab === 'register'));
+    });
+    document.getElementById('panel-login').classList.toggle('active', tab === 'login');
+    document.getElementById('panel-register').classList.toggle('active', tab === 'register');
+  }
+
+  function showAlert(id, msg, type = 'error') {
+    document.getElementById(id).innerHTML = `<div class="alert alert-${type}">${msg}</div>`;
+  }
+
+  function setLoading(btnId, loading) {
+    const btn = document.getElementById(btnId);
+    btn.disabled = loading;
+    btn.innerHTML = loading
+      ? '<span class="spinner"></span> Aguarde...'
+      : (btnId === 'btn-login' ? 'Entrar' : 'Criar conta');
+  }
+
+  async function handleLogin() {
+    const email = document.getElementById('login-email').value.trim();
+    const password = document.getElementById('login-password').value;
+    document.getElementById('login-alert').innerHTML = '';
+
+    if (!email || !password) return showAlert('login-alert', 'Preencha todos os campos.');
+
+    setLoading('btn-login', true);
+    try {
+      const data = await apiRequest('/api/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ email, password }),
+      });
+      localStorage.setItem('token', data.token);
+      if (data.refreshToken) localStorage.setItem('refreshToken', data.refreshToken);
+      localStorage.setItem('user', JSON.stringify(data.user));
+      window.location.href = 'home.html';
+    } catch (err) {
+      showAlert('login-alert', err.message);
+      setLoading('btn-login', false);
+    }
+  }
+
+  async function handleRegister() {
+    const nome = document.getElementById('reg-nome').value.trim();
+    const email = document.getElementById('reg-email').value.trim();
+    const password = document.getElementById('reg-password').value;
+    document.getElementById('register-alert').innerHTML = '';
+
+    if (!nome || !email || !password) return showAlert('register-alert', 'Preencha todos os campos.');
+    if (password.length < 6) return showAlert('register-alert', 'A senha deve ter pelo menos 6 caracteres.');
+
+    setLoading('btn-register', true);
+    try {
+      await apiRequest('/api/auth/register', {
+        method: 'POST',
+        body: JSON.stringify({ nome, email, password }),
+      });
+      showAlert('register-alert', 'Conta criada! Faça login para continuar.', 'success');
+      setTimeout(() => showTab('login'), 1500);
+    } catch (err) {
+      showAlert('register-alert', err.message);
+    } finally {
+      setLoading('btn-register', false);
+    }
+  }
+
+  // Enter para submeter
+  document.addEventListener('keydown', e => {
+    if (e.key !== 'Enter') return;
+    const active = document.querySelector('.auth-panel.active').id;
+    if (active === 'panel-login') handleLogin();
+    else handleRegister();
+  });
+</script>
+</body>
+</html>
