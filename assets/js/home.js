@@ -1,5 +1,5 @@
 // ─── Proteção de rota ─────────────────────────────────────────────────────────
-const isGuest = localStorage.getItem('isGuest') === 'true';
+const isGuest = !isLoggedIn() && localStorage.getItem('isGuest') === 'true';
 
 if (!isLoggedIn() && !isGuest) {
   window.location.href = 'index.html';

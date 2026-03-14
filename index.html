@@ -297,6 +297,7 @@
       localStorage.setItem('token', data.token);
       if (data.refreshToken) localStorage.setItem('refreshToken', data.refreshToken);
       localStorage.setItem('user', JSON.stringify(data.user));
+      localStorage.removeItem('isGuest'); // Remove o estado de visitante
       window.location.href = 'home.html';
     } catch (err) {
       showAlert('login-alert', err.message);
