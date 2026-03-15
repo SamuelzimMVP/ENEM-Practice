@@ -42,9 +42,13 @@ function stopTimer() {
 
 // ─── Helper para processar Markdown de imagens ─────────────────────────────────
 function parseMarkdownImages(text) {
-  if (!text) return '';
-  // Converte ![](url) para <img src="url" class="inline-image">
-  return text.replace(/!\[.*?\]\((.*?)\)/g, '<img src="$1" class="question-inline-img" alt="Imagem do enunciado">');
+  if (!text) return { html: '', urls: [] };
+  const urls = [];
+  const html = text.replace(/!\[.*?\]\((.*?)\)/g, (match, url) => {
+    urls.push(url);
+    return `<img src="${url}" class="question-inline-img" alt="Imagem do enunciado">`;
+  });
+  return { html, urls };
 }
 
 // ─── Renderiza questão atual ──────────────────────────────────────────────────
@@ -63,21 +67,31 @@ function renderQuestion(index) {
   document.getElementById('progress-fill').style.width = pct + '%';
   document.getElementById('progress-text').textContent = `${pct}% concluído`;
 
-  // Contexto (com suporte a markdown de imagens)
+  // Processa texto e extrai fotos já exibidas
+  const contextData = parseMarkdownImages(q.contexto || '');
+  const textData = parseMarkdownImages(q.enunciado || '');
+  const displayedUrls = new Set([...contextData.urls, ...textData.urls]);
+
+  // Contexto
   const ctxEl = document.getElementById('q-context');
   if (q.contexto && q.contexto.trim()) {
     ctxEl.style.display = 'block';
-    ctxEl.innerHTML = parseMarkdownImages(q.contexto);
+    ctxEl.innerHTML = contextData.html;
   } else {
     ctxEl.style.display = 'none';
   }
 
-  // Imagens Anexas (Múltiplas)
+  // Imagens Anexas (Múltiplas e Deduplicadas)
   const imgWrap = document.getElementById('q-image');
-  imgWrap.innerHTML = ''; // Limpa container
+  imgWrap.innerHTML = ''; 
   
-  if (q.imagens && q.imagens.length > 0) {
-    q.imagens.forEach(url => {
+  // Filtra imagens que já foram mostradas no texto
+  const extraImages = (q.imagens || []).filter(url => !displayedUrls.has(url));
+  // Remove duplicados da própria lista extra
+  const uniqueExtras = [...new Set(extraImages)];
+
+  if (uniqueExtras.length > 0) {
+    uniqueExtras.forEach(url => {
       const img = document.createElement('img');
       img.src = url;
       img.className = 'question-main-img';
@@ -89,8 +103,8 @@ function renderQuestion(index) {
     imgWrap.style.display = 'none';
   }
 
-  // Enunciado (com suporte a markdown de imagens)
-  document.getElementById('q-text').innerHTML = parseMarkdownImages(q.enunciado || '');
+  // Enunciado
+  document.getElementById('q-text').innerHTML = textData.html;
 
   // Alternativas
   const altContainer = document.getElementById('alternatives');
@@ -345,15 +359,21 @@ function openQuestionDetails(questionId, detail, index) {
     `;
   });
 
+  const ctxData = parseMarkdownImages(q.contexto || '');
+  const enuData = parseMarkdownImages(q.enunciado || '');
+  const shown = new Set([...ctxData.urls, ...enuData.urls]);
+  const extras = (q.imagens || []).filter(u => !shown.has(u));
+  const uniqueExtrasModal = [...new Set(extras)];
+
   body.innerHTML = `
     <div class="question-meta" style="margin-bottom:16px;">
       <span class="question-badge">${CATEGORY_LABELS[q.disciplina] || q.disciplina || ''}</span>
     </div>
-    ${q.contexto ? `<div class="question-context" style="margin-bottom:16px;">${parseMarkdownImages(q.contexto)}</div>` : ''}
+    ${q.contexto ? `<div class="question-context" style="margin-bottom:16px;">${ctxData.html}</div>` : ''}
     <div class="modal-images" style="margin-bottom:16px;">
-      ${(q.imagens || []).map(url => `<img src="${url}" class="question-main-img" style="margin-bottom:8px;">`).join('')}
+      ${uniqueExtrasModal.map(url => `<img src="${url}" class="question-main-img" style="margin-bottom:8px;">`).join('')}
     </div>
-    <div class="question-text" style="font-weight:600; margin-bottom:20px;">${parseMarkdownImages(q.enunciado)}</div>
+    <div class="question-text" style="font-weight:600; margin-bottom:20px;">${enuData.html}</div>
     <div class="alternatives">${altsHtml}</div>
     ${!detail.correct ? `
       <div style="margin-top:20px; padding:12px; background:#F0F5FF; border-radius:8px; font-size:0.9rem; color:var(--azul-escuro);">
