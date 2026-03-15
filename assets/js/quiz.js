@@ -244,7 +244,7 @@ function showResult(result) {
       <div class="gab-ans">${d.selected || '—'} ${d.correct ? '✓' : '✗'}</div>
       ${!d.correct ? `<div style="font-size:0.68rem;opacity:0.8">Gab: ${d.gabarito}</div>` : ''}
     `;
-    div.onclick = () => openQuestionDetails(d.questionId, d);
+    div.onclick = () => openQuestionDetails(d.questionId, d, i);
     grid.appendChild(div);
   });
 
@@ -301,7 +301,7 @@ function showAchievementToast(ach) {
 }
 
 // ─── Modal de gabarito detalhado ─────────────────────────────────────────────
-function openQuestionDetails(questionId, detail) {
+function openQuestionDetails(questionId, detail, index) {
   const q = questions.find(q => q.id === questionId);
   if (!q) return;
 
