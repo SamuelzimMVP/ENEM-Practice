@@ -51,8 +51,8 @@ function renderQuestion(index) {
   document.getElementById('q-year').textContent = q.ano ? `ENEM ${q.ano}` : 'ENEM';
   document.getElementById('q-disciplina').textContent = CATEGORY_LABELS[q.disciplina] || q.disciplina || '';
 
-  // Progresso
-  const pct = Math.round(((index) / totalCount) * 100);
+  // Progresso (mostra o progresso incluindo a questão atual)
+  const pct = Math.round(((index + 1) / totalCount) * 100);
   document.getElementById('progress-fill').style.width = pct + '%';
   document.getElementById('progress-text').textContent = `${pct}% concluído`;
 
@@ -252,8 +252,10 @@ function showResult(result) {
   sessionStorage.removeItem('quiz_session');
 
   // Barra de progresso 100%
-  const fill = document.querySelector('.progress-bar-fill');
+  const fill = document.getElementById('progress-fill');
+  const text = document.getElementById('progress-text');
   if (fill) fill.style.width = '100%';
+  if (text) text.textContent = '100% concluído';
 }
 
 // ─── Inicia quiz ──────────────────────────────────────────────────────────────
