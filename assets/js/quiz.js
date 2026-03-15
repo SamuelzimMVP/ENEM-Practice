@@ -13,7 +13,7 @@ const totalCount = session.count;
 let currentIndex = 0;
 let elapsed      = 0;     // segundos
 let timerInterval = null;
-let answers      = [];    // [{questionId, selected}]
+let answers      = questions.map(q => ({ questionId: q.id, selected: null }));
 let answerGiven  = false;
 
 // ─── Monta label da categoria ─────────────────────────────────────────────────
@@ -115,13 +115,6 @@ function renderQuestion(index) {
 
 // ─── Seleciona alternativa ────────────────────────────────────────────────────
 function selectAnswer(letra, questionId) {
-  // Se já respondeu, remove a resposta anterior para permitir troca
-  if (answerGiven) {
-    const existingIndex = answers.findIndex(a => a.questionId === questionId);
-    if (existingIndex !== -1) {
-      answers.splice(existingIndex, 1);
-    }
-  }
   answerGiven = true;
 
   // Marca visualmente
@@ -129,8 +122,11 @@ function selectAnswer(letra, questionId) {
     btn.classList.toggle('selected', btn.dataset.letra === letra);
   });
 
-  // Registra resposta
-  answers.push({ questionId, selected: letra });
+  // Registra resposta na posição correta
+  const ans = answers.find(a => a.questionId === questionId);
+  if (ans) {
+    ans.selected = letra;
+  }
 
   // Habilita próximo
   document.getElementById('btn-next').disabled = false;
@@ -138,11 +134,6 @@ function selectAnswer(letra, questionId) {
 
 // ─── Avança questão ───────────────────────────────────────────────────────────
 async function nextQuestion() {
-  // Se não respondeu, registra como em branco
-  if (!answerGiven) {
-    answers.push({ questionId: questions[currentIndex].id, selected: null });
-  }
-
   currentIndex++;
 
   if (currentIndex < totalCount) {
@@ -253,7 +244,7 @@ function showResult(result) {
       <div class="gab-ans">${d.selected || '—'} ${d.correct ? '✓' : '✗'}</div>
       ${!d.correct ? `<div style="font-size:0.68rem;opacity:0.8">Gab: ${d.gabarito}</div>` : ''}
     `;
-    div.onclick = () => openQuestionDetails(i, d);
+    div.onclick = () => openQuestionDetails(d.questionId, d);
     grid.appendChild(div);
   });
 
@@ -310,8 +301,8 @@ function showAchievementToast(ach) {
 }
 
 // ─── Modal de gabarito detalhado ─────────────────────────────────────────────
-function openQuestionDetails(index, detail) {
-  const q = questions[index];
+function openQuestionDetails(questionId, detail) {
+  const q = questions.find(q => q.id === questionId);
   if (!q) return;
 
   const modal = document.getElementById('question-modal');
