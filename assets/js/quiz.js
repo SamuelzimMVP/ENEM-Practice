@@ -10,6 +10,12 @@ const questions  = session.questions;
 const sessionId  = session.sessionId;
 const totalCount = session.count;
 
+// ─── Gabarito fallback (para quando o servidor reinicia durante o quiz) ────────
+// O backend envia o gabarito junto com o /start e ele fica guardado aqui no
+// sessionStorage. Se a sessão sumir do servidor (novo deploy), o frontend
+// envia esse fallback no submit e o resultado é calculado normalmente.
+const gabaritoFallback = session.gabaritoFallback || {};
+
 let currentIndex = 0;
 let elapsed      = 0;     // segundos
 let timerInterval = null;
@@ -186,7 +192,14 @@ async function finishQuiz() {
   try {
     const result = await apiRequest('/api/quiz/submit', {
       method: 'POST',
-      body: JSON.stringify({ sessionId, answers, timeSeconds: elapsed }),
+      body: JSON.stringify({
+        sessionId,
+        answers,
+        timeSeconds: elapsed,
+        gabaritoFallback,
+        category: session.category,
+        count: totalCount,
+      }),
     });
 
     showResult(result);
@@ -402,4 +415,4 @@ window.onclick = function(event) {
     closeModal();
   }
 }
-
+
