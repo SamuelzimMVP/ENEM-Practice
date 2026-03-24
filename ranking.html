@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ENEM Speedrun — Ranking</title>
+  <link rel="stylesheet" href="assets/css/style.css" />
+  <style>
+    /* ─── Filtros ─────────────────────────────────── */
+    .filter-bar {
+      background: var(--branco);
+      border: 1px solid var(--cinza-borda);
+      border-radius: var(--radius-lg);
+      padding: 20px 24px;
+      margin-bottom: 24px;
+      box-shadow: var(--sombra-card);
+      display: flex;
+      gap: 20px;
+      align-items: flex-end;
+      flex-wrap: wrap;
+    }
+
+    .filter-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .filter-group label {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--azul-primario);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .filter-group select {
+      padding: 9px 14px;
+      border: 1.5px solid var(--cinza-borda);
+      border-radius: var(--radius);
+      font-family: var(--font);
+      font-size: 0.92rem;
+      color: var(--texto-escuro);
+      background: var(--branco);
+      cursor: pointer;
+      outline: none;
+      transition: border-color var(--transition);
+    }
+
+    .filter-group select:focus { border-color: var(--azul-primario); }
+
+    /* ─── Pódio top 3 ─────────────────────────────── */
+    .podium {
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+
+    .podium-place {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .podium-avatar {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--branco);
+      position: relative;
+    }
+
+    .podium-place:nth-child(1) .podium-avatar { background: var(--azul-primario); width: 60px; height: 60px; }
+    .podium-place:nth-child(2) .podium-avatar { background: #B8860B; }
+    .podium-place:nth-child(3) .podium-avatar { background: var(--cinza-medio); }
+
+    .podium-medal {
+      position: absolute;
+      top: -8px;
+      right: -4px;
+      font-size: 1.1rem;
+    }
+
+    .podium-name {
+      font-weight: 700;
+      font-size: 0.88rem;
+      color: var(--azul-escuro);
+      text-align: center;
+      max-width: 100px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .podium-score {
+      font-size: 0.78rem;
+      color: var(--cinza-medio);
+      text-align: center;
+    }
+
+    .podium-block {
+      background: var(--azul-primario);
+      border-radius: var(--radius) var(--radius) 0 0;
+      width: 90px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--branco);
+      font-weight: 700;
+      font-size: 1.6rem;
+    }
+
+    .podium-place:nth-child(1) .podium-block { height: 100px; }
+    .podium-place:nth-child(2) .podium-block { height: 70px; background: #B8860B; }
+    .podium-place:nth-child(3) .podium-block { height: 50px; background: var(--cinza-medio); }
+
+    /* ─── Tabela de ranking ───────────────────────── */
+    .ranking-table-wrap {
+      background: var(--branco);
+      border: 1px solid var(--cinza-borda);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      box-shadow: var(--sombra-card);
+    }
+
+    .ranking-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .ranking-table thead tr {
+      background: var(--azul-escuro);
+      color: var(--branco);
+    }
+
+    .ranking-table th {
+      padding: 12px 16px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      text-align: left;
+    }
+
+    .ranking-table td {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--cinza-bg);
+      font-size: 0.92rem;
+      vertical-align: middle;
+    }
+
+    .ranking-table tbody tr:last-child td { border-bottom: none; }
+
+    .ranking-table tbody tr:hover { background: var(--cinza-bg); }
+
+    .ranking-table tbody tr.my-row {
+      background: #E8F0FF;
+      font-weight: 600;
+    }
+
+    .rank-pos {
+      font-weight: 700;
+      font-size: 1.1rem;
+      color: var(--cinza-medio);
+      width: 50px;
+      text-align: center;
+    }
+
+    .rank-pos.gold   { color: #B8860B; }
+    .rank-pos.silver { color: #888; }
+    .rank-pos.bronze { color: #CD7F32; }
+
+    .rank-name { font-weight: 600; color: var(--azul-escuro); }
+    .rank-you  { font-size: 0.72rem; background: var(--azul-primario); color: var(--branco); padding: 2px 7px; border-radius: 10px; margin-left: 8px; }
+
+    .rank-score { font-weight: 700; color: var(--verde); }
+    .rank-time  { color: var(--texto-medio); font-variant-numeric: tabular-nums; }
+
+    .empty-state {
+      text-align: center;
+      padding: 48px 20px;
+      color: var(--cinza-medio);
+    }
+
+    .empty-state .es-icon { font-size: 3rem; margin-bottom: 12px; }
+    .empty-state p { font-size: 0.95rem; }
+
+    @media (max-width: 700px) {
+      .podium { gap: 8px; }
+      .podium-block { width: 70px; }
+      .filter-bar { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Barra gov.br -->
+<div class="gov-bar">
+  <div class="container">
+    <div class="gov-logo">🇧🇷 <span>gov.br</span> &nbsp;|&nbsp; Ministério da Educação</div>
+  </div>
+</div>
+
+<!-- Header -->
+<header class="site-header">
+  <div class="container">
+    <div class="header-inner">
+      <a href="home.html" class="brand">
+        <div class="brand-icon">
+          <svg viewBox="0 0 24 24"><path d="M12 2L2 7v10l10 5 10-5V7L12 2zM12 4.2L20 8v8l-8 4-8-4V8l8-3.8z"/></svg>
+        </div>
+        <div class="brand-text">
+          <span class="brand-title">ENEM Speedrun</span>
+          <span class="brand-subtitle">Ministério da Educação</span>
+        </div>
+      </a>
+      <nav>
+        <a href="home.html">Início</a>
+        <a href="ranking.html" class="active">Ranking</a>
+      </nav>
+      <div style="display:flex;align-items:center;gap:10px">
+        <span id="user-name" style="color:rgba(255,255,255,0.85);font-size:0.88rem;"></span>
+        <button class="btn-logout" onclick="logout()">Sair</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="container">
+    <div class="breadcrumb">
+      <a href="home.html">Início</a>
+      <span>›</span>
+      <span>Ranking</span>
+    </div>
+
+    <h1 class="page-title">🏆 Ranking Nacional</h1>
+    <p class="page-subtitle">Os melhores tempos por categoria. Critério: mais acertos primeiro, desempate pelo menor tempo.</p>
+
+    <!-- Filtros -->
+    <div class="filter-bar">
+      <div class="filter-group">
+        <label>Categoria</label>
+        <select id="filter-category" onchange="loadRanking()">
+          <option value="completa">Prova Completa</option>
+          <option value="humanas">Humanas</option>
+          <option value="exatas">Exatas</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>Questões</label>
+        <select id="filter-count" onchange="loadRanking()">
+          <option value="10">10 questões</option>
+          <option value="20">20 questões</option>
+          <option value="30">30 questões</option>
+        </select>
+      </div>
+      <a href="home.html" class="btn btn-primary">+ Nova speedrun</a>
+    </div>
+
+    <!-- Pódio -->
+    <div id="podium-wrap" style="display:none">
+      <div class="podium" id="podium"></div>
+    </div>
+
+    <!-- Tabela -->
+    <div class="ranking-table-wrap">
+      <div id="ranking-body">
+        <div class="empty-state">
+          <div class="spinner spinner-blue" style="width:36px;height:36px;margin:0 auto 16px;"></div>
+          <p>Carregando ranking...</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<footer>
+  <div class="container" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+    <div><strong>ENEM Speedrun</strong> — Projeto independente. Questões via <a href="https://enem.dev" target="_blank" style="color:#FFCD07">enem.dev</a>.</div>
+    <div style="font-size: 0.85rem; opacity: 0.8;">Feito com ⚡ por <a href="https://github.com/SamuelzimMVP" target="_blank" style="color:#FFCD07; font-weight: 700; text-decoration: none;">Samuel Zim</a></div>
+  </div>
+</footer>
+
+<script src="assets/js/config.js"></script>
+<script src="assets/js/ranking.js"></script>
+</body>
+</html>
