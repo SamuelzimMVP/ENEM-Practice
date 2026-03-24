@@ -1,3 +1,8 @@
+// ─── Restaurar sessão ao carregar ─────────────────────────────────────────────
+(async () => {
+  await restoreSession();
+})();
+
 // ─── Proteção de rota ─────────────────────────────────────────────────────────
 if (!isLoggedIn()) window.location.href = 'index.html';
 

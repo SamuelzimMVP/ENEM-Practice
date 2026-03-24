@@ -1,3 +1,8 @@
+// ─── Restaurar sessão ao carregar ─────────────────────────────────────────────
+(async () => {
+  await restoreSession();
+})();
+
 // ─── Proteção e carregamento de sessão ─────────────────────────────────────────
 if (!isLoggedIn() && localStorage.getItem('isGuest') !== 'true') {
   window.location.href = 'index.html';

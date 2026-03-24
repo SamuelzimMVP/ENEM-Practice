@@ -30,6 +30,25 @@ async function apiRequest(path, options = {}, _isRetry = false) {
   return data;
 }
 
+// ─── Valida o token atual no servidor ─────────────────────────────────────────
+async function validateToken() {
+  const token = getToken();
+  if (!token) return false;
+
+  try {
+    const res = await fetch(`${API_BASE}/api/auth/me`, {
+      method: 'GET',
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
 // ─── Renova o token usando o refresh token ────────────────────────────────────
 async function refreshSession() {
   const refreshToken = localStorage.getItem('refreshToken');
@@ -41,13 +60,39 @@ async function refreshSession() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ refreshToken }),
     });
-    if (!res.ok) return false;
+    if (!res.ok) {
+      console.warn('[Session] Falha ao renovar refresh token');
+      return false;
+    }
     const data = await res.json();
     localStorage.setItem('token', data.token);
-    localStorage.setItem('refreshToken', data.refreshToken);
+    if (data.refreshToken) localStorage.setItem('refreshToken', data.refreshToken);
+    console.log('[Session] Token renovado com sucesso');
     return true;
-  } catch {
+  } catch (err) {
+    console.error('[Session] Erro ao renovar:', err);
     return false;
+  }
+}
+
+// ─── Verifica e restaura a sessão ao carregar a página ──────────────────────────
+async function restoreSession() {
+  if (!isLoggedIn()) return; // Sem tokens salvos
+
+  const isValid = await validateToken();
+  if (isValid) {
+    console.log('[Session] Token válido, mantendo sessão');
+    return;
+  }
+
+  console.log('[Session] Token expirado, tentando renovar...');
+  const refreshed = await refreshSession();
+  
+  if (!refreshed) {
+    console.log('[Session] Falha ao renovar, fazendo logout');
+    logout();
+  } else {
+    console.log('[Session] Sessão restaurada com sucesso');
   }
 }
 

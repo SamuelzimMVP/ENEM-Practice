@@ -1,3 +1,8 @@
+// ─── Restaurar sessão ao carregar ─────────────────────────────────────────────
+(async () => {
+  await restoreSession();
+})();
+
 // ─── Proteção de rota ─────────────────────────────────────────────────────────
 const isGuest = !isLoggedIn() && localStorage.getItem('isGuest') === 'true';
 
