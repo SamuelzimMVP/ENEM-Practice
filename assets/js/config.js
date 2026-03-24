@@ -1,8 +1,23 @@
-// ─── Configuração da API ──────────────────────────────────────────────────────
+// Configuração da API ──────────────────────────────────────────────────────
 // Troque pela URL do seu backend no Render após o deploy
 const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
   ? 'http://localhost:3001'
   : 'https://enem-speedrun-backend.onrender.com'; // ← Altere após deploy no Render
+
+// ─── Dark Mode ────────────────────────────────────────────────────────────────
+function initDarkMode() {
+  const darkMode = localStorage.getItem('darkMode') === 'true' || 
+                   (window.matchMedia('(prefers-color-scheme: dark)').matches && localStorage.getItem('darkMode') !== 'false');
+  if (darkMode) document.body.classList.add('dark-mode');
+}
+
+function toggleDarkMode() {
+  const isDark = document.body.classList.toggle('dark-mode');
+  localStorage.setItem('darkMode', isDark);
+}
+
+// Inicializa dark mode ao carregar
+initDarkMode();
 
 // ─── Helper para requisições autenticadas ────────────────────────────────────
 async function apiRequest(path, options = {}, _isRetry = false) {

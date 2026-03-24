@@ -29,6 +29,19 @@
   --font:            'Source Sans 3', 'Segoe UI', sans-serif;
 }
 
+/* ─── Dark Mode ──────────────────────────────────────────────────────── */
+body.dark-mode {
+  --azul-primario:   #2670E8;
+  --azul-escuro:     #0A2E6B;
+  --azul-claro:      #4A8FFF;
+  --cinza-bg:        #0F0F0F;
+  --cinza-borda:     #333333;
+  --cinza-medio:     #AAAAAA;
+  --texto-escuro:    #E8E8E8;
+  --texto-medio:     #B8B8B8;
+  --branco:          #1A1A1A;
+}
+
 /* ─── Reset & Base ───────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
