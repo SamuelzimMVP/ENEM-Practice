@@ -19,30 +19,47 @@ function toggleDarkMode() {
 // Inicializa dark mode ao carregar
 initDarkMode();
 
-// ─── Helper para requisições autenticadas ────────────────────────────────────
-async function apiRequest(path, options = {}, _isRetry = false) {
+// ─── Helper para requisições autenticadas com retry ──────────────────────────
+async function apiRequest(path, options = {}, _isRetry = false, _retryCount = 0) {
+  const MAX_RETRIES = 2;
   const isGuestMode = localStorage.getItem('isGuest') === 'true';
   const token = isLoggedIn() && !isGuestMode ? getToken() : null;
-  
+
   const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
   if (token) headers['Authorization'] = `Bearer ${token}`;
 
-  const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
-  const data = await res.json().catch(() => ({}));
+  try {
+    const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
+    const data = await res.json().catch(() => ({}));
 
-  // Token expirado: tenta renovar automaticamente (uma única vez)
-  if (res.status === 401 && !_isRetry && !isGuestMode) {
-    const refreshed = await refreshSession();
-    
-    if (refreshed) return apiRequest(path, options, true); // retry com novo token
-    
-    // Se não conseguiu renovar, redireciona para login
-    logout();
-    return;
+    // Token expirado: tenta renovar automaticamente (uma única vez)
+    if (res.status === 401 && !_isRetry && !isGuestMode) {
+      const refreshed = await refreshSession();
+      if (refreshed) return apiRequest(path, options, true, _retryCount);
+      logout();
+      return;
+    }
+
+    // Erro 5xx ou rede: retry com backoff
+    if ((res.status >= 500 || res.status === 0) && _retryCount < MAX_RETRIES) {
+      const delay = 1000 * (_retryCount + 1);
+      console.warn(`[API] Retry ${_retryCount + 1}/${MAX_RETRIES} em ${delay}ms...`);
+      await new Promise(r => setTimeout(r, delay));
+      return apiRequest(path, options, _isRetry, _retryCount + 1);
+    }
+
+    if (!res.ok) throw new Error(data.error || `Erro ${res.status}`);
+    return data;
+  } catch (err) {
+    // Erro de rede: retry
+    if (err.name === 'TypeError' && _retryCount < MAX_RETRIES) {
+      const delay = 1000 * (_retryCount + 1);
+      console.warn(`[API] Erro de rede, retry em ${delay}ms...`);
+      await new Promise(r => setTimeout(r, delay));
+      return apiRequest(path, options, _isRetry, _retryCount + 1);
+    }
+    throw err;
   }
-
-  if (!res.ok) throw new Error(data.error || `Erro ${res.status}`);
-  return data;
 }
 
 // ─── Valida o token atual no servidor ─────────────────────────────────────────

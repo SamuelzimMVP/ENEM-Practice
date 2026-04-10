@@ -16,16 +16,34 @@ const sessionId  = session.sessionId;
 const totalCount = session.count;
 
 // ─── Gabarito fallback (para quando o servidor reinicia durante o quiz) ────────
-// O backend envia o gabarito junto com o /start e ele fica guardado aqui no
-// sessionStorage. Se a sessão sumir do servidor (novo deploy), o frontend
-// envia esse fallback no submit e o resultado é calculado normalmente.
 const gabaritoFallback = session.gabaritoFallback || {};
 
 let currentIndex = 0;
-let elapsed      = 0;     // segundos
+let elapsed      = 0;
 let timerInterval = null;
 let answers      = questions.map(q => ({ questionId: q.id, selected: null }));
 let answerGiven  = false;
+
+// ─── Prefetch: pré-carregar imagens da próxima questão ────────────────────────
+function preloadNextQuestion() {
+  const nextIndex = currentIndex + 1;
+  if (nextIndex >= totalCount) return;
+  const q = questions[nextIndex];
+  if (!q) return;
+  
+  const imagesToPreload = [
+    ...(q.imagens || []),
+    ...(q.alternativas || []).map(a => a.imgUrl).filter(Boolean)
+  ];
+  
+  imagesToPreload.forEach(url => {
+    const link = document.createElement('link');
+    link.rel = 'prefetch';
+    link.href = url;
+    link.as = 'image';
+    document.head.appendChild(link);
+  });
+}
 
 // ─── Monta label da categoria ─────────────────────────────────────────────────
 document.getElementById('quiz-category-label').textContent =
@@ -181,6 +199,9 @@ function renderQuestion(index) {
 
   // Scroll ao topo
   window.scrollTo({ top: 0, behavior: 'smooth' });
+
+  // Pré-carregar próxima questão
+  preloadNextQuestion();
 }
 
 // ─── Seleciona alternativa ────────────────────────────────────────────────────
@@ -341,6 +362,30 @@ renderQuestion(0);
 
 // ─── Botão próximo ───────────────────────────────────────────────────────────
 document.getElementById('btn-next').onclick = nextQuestion;
+
+// ─── Teclas de atalho ────────────────────────────────────────────────────────
+document.addEventListener('keydown', (e) => {
+  const modal = document.getElementById('question-modal');
+  if (modal && modal.style.display === 'flex') {
+    if (e.key === 'Escape') closeModal();
+    return;
+  }
+  
+  // Teclas 1-5 para selecionar alternativas
+  if (e.key >= '1' && e.key <= '5') {
+    const index = parseInt(e.key) - 1;
+    const altBtns = document.querySelectorAll('.alt-btn');
+    if (altBtns[index]) {
+      altBtns[index].click();
+    }
+  }
+  
+  // Enter para avançar (só se já respondeu)
+  if (e.key === 'Enter' && answerGiven) {
+    const btnNext = document.getElementById('btn-next');
+    if (!btnNext.disabled) btnNext.click();
+  }
+});
 
 // ─── Toast de conquista estilo Steam ─────────────────────────────────────────
 function showAchievementToast(ach) {
