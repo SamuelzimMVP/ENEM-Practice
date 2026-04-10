@@ -1,15 +1,19 @@
-// ─── Restaurar sessão ao carregar ─────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════
+// ENEM Speedrun — Ranking (público)
+// ═══════════════════════════════════════════════════════════
+
+// ─── Restaurar sessão ao carregar ──────────────────────────
 (async () => {
   await restoreSession();
 })();
 
-// ─── Proteção de rota ─────────────────────────────────────────────────────────
-if (!isLoggedIn()) window.location.href = 'index.html';
-
+// ─── Ranking é público — não exige login ───────────────────
+const isGuest = !isLoggedIn();
 const user = getUser();
 if (user) document.getElementById('user-name').textContent = user.nome;
+else document.getElementById('user-name').textContent = 'Visitante';
 
-// ─── Carrega ranking ──────────────────────────────────────────────────────────
+// ─── Carrega ranking ───────────────────────────────────────
 async function loadRanking() {
   const category = document.getElementById('filter-category').value;
   const count    = document.getElementById('filter-count').value;
@@ -39,23 +43,20 @@ async function loadRanking() {
       return;
     }
 
-    // Pódio top 3
     renderPodium(ranking.slice(0, 3));
-
-    // Tabela completa
     renderTable(ranking);
 
   } catch (err) {
     body.innerHTML = `
       <div class="empty-state">
         <div class="es-icon">⚠️</div>
-        <p>Erro ao carregar ranking: ${err.message}</p>
+        <p>Erro ao carregar ranking.</p>
       </div>
     `;
   }
 }
 
-// ─── Renderiza pódio ──────────────────────────────────────────────────────────
+// ─── Renderiza pódio ───────────────────────────────────────
 function renderPodium(top) {
   const podiumWrap = document.getElementById('podium-wrap');
   const podium     = document.getElementById('podium');
@@ -63,18 +64,13 @@ function renderPodium(top) {
   if (top.length < 1) return;
 
   const medals = ['🥇', '🥈', '🥉'];
-  const order  = top.length >= 3 ? [top[1], top[0], top[2]] : top; // 2-1-3 visual
+  const heights = { 1: 100, 2: 70, 3: 50 };
 
-  const positions = top.length >= 3 ? [1, 0, 2] : [0];
-
-  podium.innerHTML = '';
-
-  // Reordena para posição visual: 2º, 1º, 3º
   const visual = top.length >= 3
     ? [{ r: top[1], p: 2 }, { r: top[0], p: 1 }, { r: top[2], p: 3 }]
     : top.map((r, i) => ({ r, p: i + 1 }));
 
-  const heights = { 1: 100, 2: 70, 3: 50 };
+  podium.innerHTML = '';
 
   visual.forEach(({ r, p }) => {
     const initial = r.nome ? r.nome[0].toUpperCase() : '?';
@@ -85,7 +81,7 @@ function renderPodium(top) {
         ${initial}
         <span class="podium-medal">${medals[p - 1]}</span>
       </div>
-      <div class="podium-name">${r.nome || 'Usuário'}</div>
+      <div class="podium-name">${escapeHtml(r.nome || 'Usuário')}</div>
       <div class="podium-score">${r.correct_answers} acertos · ${formatTime(r.time_seconds)}</div>
       <div class="podium-block" style="height:${heights[p]}px">${p}º</div>
     `;
@@ -95,7 +91,7 @@ function renderPodium(top) {
   podiumWrap.style.display = 'block';
 }
 
-// ─── Renderiza tabela ─────────────────────────────────────────────────────────
+// ─── Renderiza tabela ──────────────────────────────────────
 function renderTable(ranking) {
   const body = document.getElementById('ranking-body');
   const myId = user?.id;
@@ -106,11 +102,11 @@ function renderTable(ranking) {
     const pos = i + 1;
     const isMe = r.user_id === myId;
     const posClass = pos <= 3 ? posClasses[pos - 1] : '';
-    const nome = r.nome || 'Usuário';
+    const nome = escapeHtml(r.nome || 'Usuário');
 
     return `
       <tr class="${isMe ? 'my-row' : ''}">
-        <td class="rank-pos ${posClass}">${pos <= 3 ? ['🥇','🥈','🥉'][pos - 1] : pos + 'º'}</td>
+        <td class="rank-pos ${posClass}">${pos <= 3 ? ['🥇','','🥉'][pos - 1] : pos + 'º'}</td>
         <td class="rank-name">
           ${nome}
           ${isMe ? '<span class="rank-you">Você</span>' : ''}
@@ -140,5 +136,5 @@ function renderTable(ranking) {
   `;
 }
 
-// ─── Inicia ───────────────────────────────────────────────────────────────────
+// ─── Inicia ────────────────────────────────────────────────
 loadRanking();

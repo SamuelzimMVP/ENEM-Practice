@@ -1,9 +1,13 @@
-// ─── Restaurar sessão ao carregar ─────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════
+// ENEM Speedrun — Quiz Engine
+// ═══════════════════════════════════════════════════════════
+
+// ─── Restaurar sessão ao carregar ──────────────────────────
 (async () => {
   await restoreSession();
 })();
 
-// ─── Proteção e carregamento de sessão ─────────────────────────────────────────
+// ─── Proteção e carregamento de sessão ─────────────────────
 if (!isLoggedIn() && localStorage.getItem('isGuest') !== 'true') {
   window.location.href = 'index.html';
 }
@@ -15,8 +19,16 @@ const questions  = session.questions;
 const sessionId  = session.sessionId;
 const totalCount = session.count;
 
-// ─── Gabarito fallback (para quando o servidor reinicia durante o quiz) ────────
-const gabaritoFallback = session.gabaritoFallback || {};
+// ─── Validação de segurança ────────────────────────────────
+if (!sessionId || typeof sessionId !== 'string' || sessionId.length < 10) {
+  console.error('[Quiz] sessionId inválido:', sessionId);
+  window.location.href = 'home.html';
+}
+
+if (!Array.isArray(questions) || questions.length === 0) {
+  console.error('[Quiz] Sem questões na sessão');
+  window.location.href = 'home.html';
+}
 
 let currentIndex = 0;
 let elapsed      = 0;
@@ -24,41 +36,120 @@ let timerInterval = null;
 let answers      = questions.map(q => ({ questionId: q.id, selected: null }));
 let answerGiven  = false;
 
-// ─── Prefetch: pré-carregar imagens da próxima questão ────────────────────────
+// ─── Sanitização HTML (prevenção XSS) ──────────────────────
+function escapeHtml(text) {
+  if (!text) return '';
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+function sanitizeHtml(html) {
+  if (!html) return '';
+  // Remove tags perigosas: script, iframe, object, embed, event handlers
+  const temp = document.createElement('div');
+  temp.innerHTML = html;
+
+  // Remove elementos perigosos
+  temp.querySelectorAll('script, iframe, object, embed, form, link, style, meta').forEach(el => el.remove());
+
+  // Remove event handlers de todos os elementos
+  temp.querySelectorAll('*').forEach(el => {
+    const attrs = [...el.attributes];
+    attrs.forEach(attr => {
+      if (attr.name.startsWith('on')) {
+        el.removeAttribute(attr.name);
+      }
+    });
+  });
+
+  // Remove javascript: e data: de href/src
+  temp.querySelectorAll('[href], [src]').forEach(el => {
+    ['href', 'src', 'action'].forEach(attr => {
+      const val = el.getAttribute(attr);
+      if (val && (val.trim().toLowerCase().startsWith('javascript:') || val.trim().toLowerCase().startsWith('data:text/html'))) {
+        el.removeAttribute(attr);
+      }
+    });
+  });
+
+  return temp.innerHTML;
+}
+
+// ─── Processa Markdown de imagens (seguro) ─────────────────
+function parseMarkdownImages(text) {
+  if (!text) return { html: '', urls: [] };
+  const urls = [];
+
+  const allowedDomains = ['cdn.dio.me', 'enem.dev', 'i.imgur.com', 'ibb.co', 'imgur.com', 'upload.wikimedia.org'];
+
+  // Primeiro escapa todo o HTML, depois processa imagens markdown
+  const escaped = escapeHtml(text);
+
+  const html = escaped.replace(/!\[.*?\]\((.*?)\)/g, (match, url) => {
+    try {
+      const urlObj = new URL(url);
+      if (allowedDomains.some(domain => urlObj.hostname.endsWith(domain)) || url.startsWith('data:image/')) {
+        urls.push(url);
+        return `<img src="${escapeHtml(url)}" class="question-inline-img" alt="Imagem do enunciado">`;
+      }
+    } catch (e) {
+      // URL inválida, ignora
+    }
+    return '';
+  });
+
+  return { html: sanitizeHtml(html), urls };
+}
+
+// ─── Valida URL de imagem ──────────────────────────────────
+function isImageUrlAllowed(url) {
+  if (!url) return false;
+  try {
+    const urlObj = new URL(url);
+    const allowedDomains = ['cdn.dio.me', 'enem.dev', 'i.imgur.com', 'ibb.co', 'imgur.com', 'upload.wikimedia.org'];
+    return allowedDomains.some(domain => urlObj.hostname.endsWith(domain)) || url.startsWith('data:image/');
+  } catch (e) {
+    return false;
+  }
+}
+
+// ─── Prefetch: pré-carregar imagens da próxima questão ─────
 function preloadNextQuestion() {
   const nextIndex = currentIndex + 1;
   if (nextIndex >= totalCount) return;
   const q = questions[nextIndex];
   if (!q) return;
-  
+
   const imagesToPreload = [
     ...(q.imagens || []),
     ...(q.alternativas || []).map(a => a.imgUrl).filter(Boolean)
   ];
-  
+
   imagesToPreload.forEach(url => {
-    const link = document.createElement('link');
-    link.rel = 'prefetch';
-    link.href = url;
-    link.as = 'image';
-    document.head.appendChild(link);
+    if (isImageUrlAllowed(url)) {
+      const link = document.createElement('link');
+      link.rel = 'prefetch';
+      link.href = url;
+      link.as = 'image';
+      document.head.appendChild(link);
+    }
   });
 }
 
-// ─── Monta label da categoria ─────────────────────────────────────────────────
+// ─── Monta label da categoria ──────────────────────────────
 document.getElementById('quiz-category-label').textContent =
   (session.categoryLabel || CATEGORY_LABELS[session.category] || 'ENEM Speedrun').toUpperCase();
 document.getElementById('q-total').textContent = totalCount;
 
-// ─── Cronômetro ───────────────────────────────────────────────────────────────
+// ─── Cronômetro ────────────────────────────────────────────
 function startTimer() {
   timerInterval = setInterval(() => {
     elapsed++;
     const el = document.getElementById('timer');
     el.textContent = formatTime(elapsed);
 
-    // Alertas visuais de tempo
-    const limit = totalCount * 3 * 60; // 3 min por questão referência
+    const limit = totalCount * 3 * 60;
     if (elapsed > limit * 0.85) el.className = 'timer danger';
     else if (elapsed > limit * 0.6) el.className = 'timer warning';
     else el.className = 'timer';
@@ -69,66 +160,24 @@ function stopTimer() {
   clearInterval(timerInterval);
 }
 
-// ─── Helper para sanitizar HTML (prevenir XSS) ───────────────────────────────
-function escapeHtml(text) {
-  if (!text) return '';
-  const div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML;
-}
-
-// ─── Helper para processar Markdown de imagens ─────────────────────────────────
-function parseMarkdownImages(text) {
-  if (!text) return { html: '', urls: [] };
-  const urls = [];
-
-  // Lista de domínios permitidos para imagens
-  const allowedDomains = ['cdn.dio.me', 'enem.dev', 'i.imgur.com', 'ibb.co', 'imgur.com', 'upload.wikimedia.org'];
-
-  const html = text.replace(/!\[.*?\]\((.*?)\)/g, (match, url) => {
-    try {
-      const urlObj = new URL(url);
-      if (allowedDomains.some(domain => urlObj.hostname.endsWith(domain)) || url.startsWith('data:')) {
-        urls.push(url);
-        return `<img src="${escapeHtml(url)}" class="question-inline-img" alt="Imagem do enunciado">`;
-      }
-    } catch (e) {
-      // URL inválida, ignora
-    }
-    return '';
-  });
-  return { html, urls };
-}
-
-// ─── Helper para validar URL de imagem ────────────────────────────────────────
-function isImageUrlAllowed(url) {
-  if (!url) return false;
-  try {
-    const urlObj = new URL(url);
-    const allowedDomains = ['cdn.dio.me', 'enem.dev', 'i.imgur.com', 'ibb.co', 'imgur.com', 'upload.wikimedia.org'];
-    return allowedDomains.some(domain => urlObj.hostname.endsWith(domain)) || url.startsWith('data:');
-  } catch (e) {
-    return false;
-  }
-}
-
-// ─── Renderiza questão atual ──────────────────────────────────────────────────
+// ─── Renderiza questão atual ───────────────────────────────
 function renderQuestion(index) {
   const q = questions[index];
+  if (!q) return;
   answerGiven = false;
 
   // Meta
   document.getElementById('q-current').textContent = index + 1;
   document.getElementById('q-num').textContent = `Questão ${index + 1}`;
   document.getElementById('q-year').textContent = q.ano ? `ENEM ${q.ano}` : 'ENEM';
-  document.getElementById('q-disciplina').textContent = CATEGORY_LABELS[q.disciplina] || q.disciplina || '';
+  document.getElementById('q-disciplina').textContent = CATEGORY_LABELS[q.disciplina] || escapeHtml(q.disciplina) || '';
 
-  // Progresso (mostra o progresso incluindo a questão atual)
+  // Progresso
   const pct = Math.round(((index + 1) / totalCount) * 100);
   document.getElementById('progress-fill').style.width = pct + '%';
   document.getElementById('progress-text').textContent = `${pct}% concluído`;
 
-  // Processa texto e extrai fotos já exibidas
+  // Processa texto (com sanitização)
   const contextData = parseMarkdownImages(q.contexto || '');
   const textData = parseMarkdownImages(q.enunciado || '');
   const displayedUrls = new Set([...contextData.urls, ...textData.urls]);
@@ -142,14 +191,11 @@ function renderQuestion(index) {
     ctxEl.style.display = 'none';
   }
 
-  // Imagens Anexas (Múltiplas e Deduplicadas)
+  // Imagens anexas (deduplicadas)
   const imgWrap = document.getElementById('q-image');
-  imgWrap.innerHTML = ''; 
-  
-  // Filtra imagens que já foram mostradas no texto e valida URLs
+  imgWrap.innerHTML = '';
   const extraImages = (q.imagens || [])
     .filter(url => !displayedUrls.has(url) && isImageUrlAllowed(url));
-  // Remove duplicados da própria lista extra
   const uniqueExtras = [...new Set(extraImages)];
 
   if (uniqueExtras.length > 0) {
@@ -165,7 +211,7 @@ function renderQuestion(index) {
     imgWrap.style.display = 'none';
   }
 
-  // Enunciado
+  // Enunciado (sanitizado)
   document.getElementById('q-text').innerHTML = textData.html;
 
   // Alternativas
@@ -176,8 +222,8 @@ function renderQuestion(index) {
     btn.className = 'alt-btn';
     btn.dataset.letra = alt.letra;
     btn.innerHTML = `
-      <span class="alt-letter">${alt.letra}</span>
-      ${alt.imgUrl
+      <span class="alt-letter">${escapeHtml(alt.letra)}</span>
+      ${alt.imgUrl && isImageUrlAllowed(alt.imgUrl)
         ? `<img src="${escapeHtml(alt.imgUrl)}" alt="Alternativa ${escapeHtml(alt.letra)}" style="max-width:100%;max-height:120px;object-fit:contain;" onerror="this.style.display='none'">`
         : `<span>${escapeHtml(alt.texto)}</span>`
       }
@@ -197,36 +243,24 @@ function renderQuestion(index) {
   void card.offsetWidth;
   card.style.animation = 'fadeIn 0.3s ease forwards';
 
-  // Scroll ao topo
   window.scrollTo({ top: 0, behavior: 'smooth' });
-
-  // Pré-carregar próxima questão
   preloadNextQuestion();
 }
 
-// ─── Seleciona alternativa ────────────────────────────────────────────────────
+// ─── Seleciona alternativa ─────────────────────────────────
 function selectAnswer(letra, questionId) {
   answerGiven = true;
-
-  // Marca visualmente
   document.querySelectorAll('.alt-btn').forEach(btn => {
     btn.classList.toggle('selected', btn.dataset.letra === letra);
   });
-
-  // Registra resposta na posição correta
   const ans = answers.find(a => a.questionId === questionId);
-  if (ans) {
-    ans.selected = letra;
-  }
-
-  // Habilita próximo
+  if (ans) ans.selected = letra;
   document.getElementById('btn-next').disabled = false;
 }
 
-// ─── Avança questão ───────────────────────────────────────────────────────────
+// ─── Avança questão ────────────────────────────────────────
 async function nextQuestion() {
   currentIndex++;
-
   if (currentIndex < totalCount) {
     renderQuestion(currentIndex);
   } else {
@@ -234,12 +268,22 @@ async function nextQuestion() {
   }
 }
 
-// ─── Finaliza e envia resultado ───────────────────────────────────────────────
+// ─── Finaliza e envia resultado ────────────────────────────
 async function finishQuiz() {
   stopTimer();
   document.getElementById('quiz-screen').style.display = 'none';
 
-  // Spinner enquanto envia
+  // Validação antes de enviar
+  if (!sessionId) {
+    document.getElementById('result-screen').innerHTML = `
+      <div class="alert alert-error">Erro: sessão inválida. Volte e tente novamente.</div>
+      <div style="text-align:center;margin-top:20px;">
+        <a href="home.html" class="btn btn-primary">Voltar ao início</a>
+      </div>
+    `;
+    return;
+  }
+
   document.getElementById('result-screen').style.display = 'block';
   document.getElementById('result-screen').innerHTML = `
     <div style="text-align:center;padding:60px 0;">
@@ -255,15 +299,11 @@ async function finishQuiz() {
         sessionId,
         answers,
         timeSeconds: elapsed,
-        gabaritoFallback,
-        category: session.category,
-        count: totalCount,
       }),
     });
 
     showResult(result);
 
-    // Exibe conquistas desbloqueadas (após pequeno delay para o resultado aparecer primeiro)
     if (result.newAchievements && result.newAchievements.length > 0) {
       result.newAchievements.forEach((ach, i) => {
         setTimeout(() => showAchievementToast(ach), 1200 + i * 1800);
@@ -271,7 +311,7 @@ async function finishQuiz() {
     }
   } catch (err) {
     document.getElementById('result-screen').innerHTML = `
-      <div class="alert alert-error">Erro ao enviar resultado: ${err.message}</div>
+      <div class="alert alert-error">Erro ao enviar resultado: ${escapeHtml(err.message)}</div>
       <div style="text-align:center;margin-top:20px;">
         <a href="home.html" class="btn btn-primary">Voltar ao início</a>
       </div>
@@ -279,21 +319,16 @@ async function finishQuiz() {
   }
 }
 
-// ─── Exibe tela de resultado ──────────────────────────────────────────────────
+// ─── Exibe tela de resultado ───────────────────────────────
 function showResult(result) {
   const pct = result.percentage;
   const emoji = pct >= 80 ? '🏆' : pct >= 60 ? '🎯' : pct >= 40 ? '📚' : '💪';
-  const msg = pct >= 80
-    ? 'Excelente desempenho!'
-    : pct >= 60 ? 'Bom resultado!'
-    : pct >= 40 ? 'Continue praticando!'
-    : 'Não desista, continue estudando!';
 
   document.getElementById('result-screen').innerHTML = `
     <div class="result-hero">
       <div style="font-size:3rem;margin-bottom:12px">${emoji}</div>
       <h2>Speedrun concluída!</h2>
-      <p>${CATEGORY_LABELS[session.category] || session.category} — ${result.total} questões</p>
+      <p>${escapeHtml(CATEGORY_LABELS[session.category] || session.category)} — ${result.total} questões</p>
     </div>
     <div class="result-stats">
       <div class="result-stat">
@@ -313,14 +348,12 @@ function showResult(result) {
         <div class="rs-label">${result.isGuest ? 'Não salvo' : 'Posição no ranking'}</div>
       </div>
     </div>
-
     ${result.isGuest ? `
     <div style="background: #e8f0ff; border: 1px solid #b3d1ff; border-radius: 12px; padding: 16px; text-align: center; margin-bottom: 24px; color: #1a4a99;">
-      <strong>Modo Visitante:</strong> Seu tempo não foi salvo no ranking nacional. 
+      <strong>Modo Visitante:</strong> Seu tempo não foi salvo no ranking nacional.
       <a href="index.html" style="font-weight:700; color: #0056b3;">Crie uma conta</a> para competir com outros estudantes!
     </div>
     ` : ''}
-
     <div class="gabarito-section">
       <h3>📋 Gabarito detalhado</h3>
       <div class="gabarito-grid" id="gabarito-grid"></div>
@@ -339,57 +372,49 @@ function showResult(result) {
     div.title = "Clique para ver detalhes";
     div.innerHTML = `
       <div class="gab-q">Q${i + 1}</div>
-      <div class="gab-ans">${d.selected || '—'} ${d.correct ? '✓' : '✗'}</div>
-      ${!d.correct ? `<div style="font-size:0.68rem;opacity:0.8">Gab: ${d.gabarito}</div>` : ''}
+      <div class="gab-ans">${escapeHtml(d.selected || '—')} ${d.correct ? '✓' : '✗'}</div>
+      ${!d.correct ? `<div style="font-size:0.68rem;opacity:0.8">Gab: ${escapeHtml(d.gabarito)}</div>` : ''}
     `;
     div.onclick = () => openQuestionDetails(d.questionId, d, i);
     grid.appendChild(div);
   });
 
-  // Limpa sessão
   sessionStorage.removeItem('quiz_session');
 
-  // Barra de progresso 100%
   const fill = document.getElementById('progress-fill');
   const text = document.getElementById('progress-text');
   if (fill) fill.style.width = '100%';
   if (text) text.textContent = '100% concluído';
 }
 
-// ─── Inicia quiz ──────────────────────────────────────────────────────────────
+// ─── Inicia quiz ───────────────────────────────────────────
 startTimer();
 renderQuestion(0);
 
-// ─── Botão próximo ───────────────────────────────────────────────────────────
 document.getElementById('btn-next').onclick = nextQuestion;
 
-// ─── Teclas de atalho ────────────────────────────────────────────────────────
+// ─── Teclas de atalho ──────────────────────────────────────
 document.addEventListener('keydown', (e) => {
   const modal = document.getElementById('question-modal');
   if (modal && modal.style.display === 'flex') {
     if (e.key === 'Escape') closeModal();
     return;
   }
-  
-  // Teclas 1-5 para selecionar alternativas
+
   if (e.key >= '1' && e.key <= '5') {
     const index = parseInt(e.key) - 1;
     const altBtns = document.querySelectorAll('.alt-btn');
-    if (altBtns[index]) {
-      altBtns[index].click();
-    }
+    if (altBtns[index]) altBtns[index].click();
   }
-  
-  // Enter para avançar (só se já respondeu)
+
   if (e.key === 'Enter' && answerGiven) {
     const btnNext = document.getElementById('btn-next');
     if (!btnNext.disabled) btnNext.click();
   }
 });
 
-// ─── Toast de conquista estilo Steam ─────────────────────────────────────────
+// ─── Toast de conquista ────────────────────────────────────
 function showAchievementToast(ach) {
-  // Garante que o container existe
   let container = document.getElementById('achievement-container');
   if (!container) {
     container = document.createElement('div');
@@ -402,29 +427,26 @@ function showAchievementToast(ach) {
   toast.innerHTML = `
     <div class="ach-header">🎮 Conquista desbloqueada!</div>
     <div class="ach-body">
-      <div class="ach-icon">${ach.icon}</div>
+      <div class="ach-icon">${escapeHtml(ach.icon)}</div>
       <div class="ach-info">
-        <div class="ach-title">${ach.title}</div>
-        <div class="ach-desc">${ach.description}</div>
+        <div class="ach-title">${escapeHtml(ach.title)}</div>
+        <div class="ach-desc">${escapeHtml(ach.description)}</div>
       </div>
     </div>
   `;
 
   container.appendChild(toast);
-
-  // Anima entrada
   requestAnimationFrame(() => {
     requestAnimationFrame(() => toast.classList.add('show'));
   });
 
-  // Remove após 5 segundos
   setTimeout(() => {
     toast.classList.remove('show');
     toast.addEventListener('transitionend', () => toast.remove(), { once: true });
   }, 5000);
 }
 
-// ─── Modal de gabarito detalhado ─────────────────────────────────────────────
+// ─── Modal de gabarito detalhado ───────────────────────────
 function openQuestionDetails(questionId, detail, index) {
   const q = questions.find(q => q.id === questionId);
   if (!q) return;
@@ -434,12 +456,11 @@ function openQuestionDetails(questionId, detail, index) {
   const body = document.getElementById('modal-q-body');
 
   title.textContent = `Questão ${index + 1} — ENEM ${q.ano || ''}`;
-  
+
   let altsHtml = '';
   (q.alternativas || []).forEach(alt => {
     const isCorrect = alt.letra === detail.gabarito;
     const isSelected = alt.letra === detail.selected;
-    
     let stateClass = '';
     if (isCorrect) stateClass = 'correct';
     else if (isSelected && !detail.correct) stateClass = 'wrong';
@@ -463,7 +484,7 @@ function openQuestionDetails(questionId, detail, index) {
 
   body.innerHTML = `
     <div class="question-meta" style="margin-bottom:16px;">
-      <span class="question-badge">${CATEGORY_LABELS[q.disciplina] || escapeHtml(q.disciplina) || ''}</span>
+      <span class="question-badge">${escapeHtml(CATEGORY_LABELS[q.disciplina] || q.disciplina || '')}</span>
     </div>
     ${q.contexto ? `<div class="question-context" style="margin-bottom:16px;">${ctxData.html}</div>` : ''}
     <div class="modal-images" style="margin-bottom:16px;">
@@ -473,7 +494,7 @@ function openQuestionDetails(questionId, detail, index) {
     <div class="alternatives">${altsHtml}</div>
     ${!detail.correct ? `
       <div style="margin-top:20px; padding:12px; background:#F0F5FF; border-radius:8px; font-size:0.9rem; color:var(--azul-escuro);">
-        💡 <strong>Dica:</strong> Você marcou a alternativa <strong>${detail.selected || 'nenhuma'}</strong>, mas a correta era a <strong>${detail.gabarito}</strong>.
+        💡 <strong>Dica:</strong> Você marcou <strong>${escapeHtml(detail.selected || 'nenhuma')}</strong>, correta era <strong>${escapeHtml(detail.gabarito)}</strong>.
       </div>
     ` : `
       <div style="margin-top:20px; padding:12px; background:var(--verde-claro); border-radius:8px; font-size:0.9rem; color:#0a4a0a;">
@@ -483,19 +504,15 @@ function openQuestionDetails(questionId, detail, index) {
   `;
 
   modal.style.display = 'flex';
-  document.body.style.overflow = 'hidden'; // Trava scroll
+  document.body.style.overflow = 'hidden';
 }
 
 function closeModal() {
   document.getElementById('question-modal').style.display = 'none';
-  document.body.style.overflow = ''; // Destrava scroll
+  document.body.style.overflow = '';
 }
 
-// Fecha modal ao clicar fora
 window.onclick = function(event) {
   const modal = document.getElementById('question-modal');
-  if (event.target == modal) {
-    closeModal();
-  }
-}
-
+  if (event.target == modal) closeModal();
+};

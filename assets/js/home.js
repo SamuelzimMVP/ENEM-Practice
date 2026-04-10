@@ -1,9 +1,13 @@
-// ─── Restaurar sessão ao carregar ─────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════
+// ENEM Speedrun — Home Page
+// ═══════════════════════════════════════════════════════════
+
+// ─── Restaurar sessão ao carregar ──────────────────────────
 (async () => {
   await restoreSession();
 })();
 
-// ─── Proteção de rota ─────────────────────────────────────────────────────────
+// ─── Proteção de rota ──────────────────────────────────────
 const isGuest = !isLoggedIn() && localStorage.getItem('isGuest') === 'true';
 
 if (!isLoggedIn() && !isGuest) {
@@ -19,40 +23,19 @@ if (user) {
   document.getElementById('banner-name').textContent = 'Visitante';
 }
 
-// ─── Estado ───────────────────────────────────────────────────────────────────
+// ─── Estado ────────────────────────────────────────────────
 let selectedCategory = null;
 let selectedCount = null;
 
-// ─── Mostra área de matérias ──────────────────────────────────────────────────
-function showArea(area, btn) {
-  document.querySelectorAll('[id^="area-"]').forEach(el => el.style.display = 'none');
-  document.getElementById(`area-${area}`).style.display = 'grid';
-  document.querySelectorAll('.subject-area-tab').forEach(t => t.classList.remove('active'));
-  btn.classList.add('active');
-}
-
-// ─── Seleciona grupo ──────────────────────────────────────────────────────────
+// ─── Seleciona grupo ───────────────────────────────────────
 function selectGroup(el) {
-  // Deseleciona tudo
   document.querySelectorAll('.group-card').forEach(c => c.classList.remove('selected'));
-  document.querySelectorAll('.subject-chip').forEach(c => c.classList.remove('selected'));
-
   el.classList.add('selected');
   selectedCategory = el.dataset.category;
   updateStartBar();
 }
 
-// ─── Seleciona matéria individual ─────────────────────────────────────────────
-function selectSubject(el) {
-  document.querySelectorAll('.group-card').forEach(c => c.classList.remove('selected'));
-  document.querySelectorAll('.subject-chip').forEach(c => c.classList.remove('selected'));
-
-  el.classList.add('selected');
-  selectedCategory = el.dataset.category;
-  updateStartBar();
-}
-
-// ─── Seleciona quantidade ─────────────────────────────────────────────────────
+// ─── Seleciona quantidade ──────────────────────────────────
 function selectCount(el) {
   document.querySelectorAll('.count-card').forEach(c => c.classList.remove('selected'));
   el.classList.add('selected');
@@ -60,7 +43,7 @@ function selectCount(el) {
   updateStartBar();
 }
 
-// ─── Atualiza barra de start ──────────────────────────────────────────────────
+// ─── Atualiza barra de start ───────────────────────────────
 function updateStartBar() {
   const btn = document.getElementById('btn-start');
   const summary = document.getElementById('start-summary');
@@ -81,7 +64,7 @@ function updateStartBar() {
   }
 }
 
-// ─── Inicia a speedrun ────────────────────────────────────────────────────────
+// ─── Inicia a speedrun ─────────────────────────────────────
 async function startQuiz() {
   if (!selectedCategory || !selectedCount) return;
 
@@ -95,7 +78,6 @@ async function startQuiz() {
       body: JSON.stringify({ category: selectedCategory, count: selectedCount }),
     });
 
-    // Salva sessão no sessionStorage
     sessionStorage.setItem('quiz_session', JSON.stringify(data));
     window.location.href = 'quiz.html';
   } catch (err) {
@@ -104,7 +86,8 @@ async function startQuiz() {
     btn.innerHTML = 'Iniciar Speedrun ▶';
   }
 }
-// ─── Carrega conquistas ───────────────────────────────────────────────────────
+
+// ─── Carrega conquistas ────────────────────────────────────
 async function loadAchievements() {
   const grid = document.getElementById('achievements-grid');
   if (!grid) return;
@@ -119,9 +102,9 @@ async function loadAchievements() {
       const dateStr = earned ? new Date(earned.earned_at).toLocaleDateString('pt-BR') : '';
 
       return `
-        <div class="achievement-badge ${isUnlocked ? 'unlocked' : ''}" title="${ach.description}">
-          <div class="badge-icon">${ach.icon}</div>
-          <div class="badge-title">${ach.title}</div>
+        <div class="achievement-badge ${isUnlocked ? 'unlocked' : ''}" title="${escapeHtml(ach.description)}">
+          <div class="badge-icon">${escapeHtml(ach.icon)}</div>
+          <div class="badge-title">${escapeHtml(ach.title)}</div>
           ${isUnlocked ? `<div class="badge-date">${dateStr}</div>` : '<div class="badge-date">Bloqueada</div>'}
         </div>
       `;
@@ -132,7 +115,7 @@ async function loadAchievements() {
   }
 }
 
-// ─── Inicia ───────────────────────────────────────────────────────────────────
+// ─── Conquistas para visitantes ────────────────────────────
 if (!isGuest) {
   loadAchievements();
 } else {
