@@ -30,7 +30,7 @@
     }
     .official-controls {
       display: grid;
-      grid-template-columns: 1fr 1fr 1fr auto;
+      grid-template-columns: 1fr 1fr 1fr;
       gap: 12px;
       align-items: end;
       background: var(--branco);
@@ -55,34 +55,34 @@
       background: var(--branco);
       color: var(--texto-escuro);
     }
-    .pdf-shell {
+    .exam-card {
       background: var(--branco);
       border: 1px solid var(--cinza-borda);
       border-radius: var(--radius-lg);
-      overflow: hidden;
+      padding: 28px;
       box-shadow: var(--sombra-card);
+      text-align: center;
     }
-    .pdf-toolbar {
+    .exam-icon { font-size: 3rem; margin-bottom: 10px; }
+    .exam-card h2 { color: var(--azul-escuro); margin-bottom: 8px; }
+    .exam-card p { color: var(--texto-medio); line-height: 1.55; }
+    .exam-actions {
       display: flex;
-      gap: 10px;
-      justify-content: space-between;
-      align-items: center;
-      padding: 12px 14px;
-      border-bottom: 1px solid var(--cinza-borda);
+      justify-content: center;
+      gap: 12px;
       flex-wrap: wrap;
+      margin: 22px 0 14px;
     }
-    #pdf-frame {
-      display: block;
-      width: 100%;
-      height: calc(100vh - 290px);
-      min-height: 650px;
-      border: 0;
-      background: #f4f5f7;
+    .embed-note {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 12px 14px;
+      border-radius: var(--radius);
+      background: #f4f6fa;
     }
     .source-note { font-size: .78rem; color: var(--cinza-medio); }
     @media (max-width: 850px) {
       .official-controls { grid-template-columns: 1fr 1fr; }
-      #pdf-frame { height: 72vh; min-height: 520px; }
     }
     @media (max-width: 560px) {
       .official-controls { grid-template-columns: 1fr; }
@@ -141,20 +141,24 @@
           <label for="official-booklet">Caderno</label>
           <select id="official-booklet"></select>
         </div>
-        <button id="load-official" class="btn btn-primary">Abrir prova</button>
       </section>
 
-      <section class="pdf-shell">
-        <div class="pdf-toolbar">
-          <div>
-            <strong id="pdf-title">ENEM 2025 — 1º dia — Amarelo</strong>
-            <div class="source-note">PDF carregado diretamente de riep.inep.gov.br</div>
-          </div>
-          <a id="open-external" class="btn btn-outline" target="_blank" rel="noopener noreferrer">
-            Abrir PDF em nova aba
+      <section class="exam-card" aria-labelledby="pdf-title">
+        <div class="exam-icon" aria-hidden="true">📄</div>
+        <h2 id="pdf-title">ENEM 2025 — 1º dia — Caderno Amarelo</h2>
+        <p id="selection-status" class="source-note" aria-live="polite"></p>
+        <div class="exam-actions">
+          <a id="open-external" class="btn btn-primary" target="_blank" rel="noopener noreferrer">
+            Abrir PDF oficial
+          </a>
+          <a id="source-link" class="btn btn-outline" target="_blank" rel="noopener noreferrer">
+            Ver página no Inep
           </a>
         </div>
-        <iframe id="pdf-frame" title="Caderno oficial do ENEM"></iframe>
+        <p class="embed-note">
+          O documento abre em uma nova aba porque o Repositório do Inep bloqueia a exibição
+          incorporada em sites externos. Assim você acessa o arquivo original, sem cópias ou intermediários.
+        </p>
       </section>
     </div>
   </main>
@@ -169,4 +173,3 @@
   <script src="assets/js/official-exam.js"></script>
 </body>
 </html>
-

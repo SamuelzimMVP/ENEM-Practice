@@ -37,13 +37,6 @@ let answers      = questions.map(q => ({ questionId: q.id, selected: null }));
 let answerGiven  = false;
 
 // ─── Sanitização HTML (prevenção XSS) ──────────────────────
-function escapeHtml(text) {
-  if (!text) return '';
-  const div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML;
-}
-
 function sanitizeHtml(html) {
   if (!html) return '';
   // Remove tags perigosas: script, iframe, object, embed, event handlers
@@ -76,42 +69,50 @@ function sanitizeHtml(html) {
   return temp.innerHTML;
 }
 
+const ALLOWED_IMAGE_DOMAINS = [
+  'cdn.dio.me',
+  'enem.dev',
+  'i.imgur.com',
+  'ibb.co',
+  'imgur.com',
+  'upload.wikimedia.org',
+];
+const SAFE_DATA_IMAGE = /^data:image\/(?:png|jpeg|gif|webp);base64,/i;
+
+// ─── Valida URL de imagem ──────────────────────────────────
+function isImageUrlAllowed(url) {
+  if (typeof url !== 'string' || url.length > 5000) return false;
+  if (SAFE_DATA_IMAGE.test(url)) return true;
+
+  try {
+    const urlObj = new URL(url);
+    if (!['http:', 'https:'].includes(urlObj.protocol)) return false;
+
+    return ALLOWED_IMAGE_DOMAINS.some(domain =>
+      urlObj.hostname === domain || urlObj.hostname.endsWith(`.${domain}`)
+    );
+  } catch {
+    return false;
+  }
+}
+
 // ─── Processa Markdown de imagens (seguro) ─────────────────
 function parseMarkdownImages(text) {
   if (!text) return { html: '', urls: [] };
   const urls = [];
 
-  const allowedDomains = ['cdn.dio.me', 'enem.dev', 'i.imgur.com', 'ibb.co', 'imgur.com', 'upload.wikimedia.org'];
-
   // Primeiro escapa todo o HTML, depois processa imagens markdown
   const escaped = escapeHtml(text);
 
   const html = escaped.replace(/!\[.*?\]\((.*?)\)/g, (match, url) => {
-    try {
-      const urlObj = new URL(url);
-      if (allowedDomains.some(domain => urlObj.hostname.endsWith(domain)) || url.startsWith('data:image/')) {
-        urls.push(url);
-        return `<img src="${escapeHtml(url)}" class="question-inline-img" alt="Imagem do enunciado">`;
-      }
-    } catch (e) {
-      // URL inválida, ignora
+    if (isImageUrlAllowed(url)) {
+      urls.push(url);
+      return `<img src="${escapeHtml(url)}" class="question-inline-img" alt="Imagem do enunciado">`;
     }
     return '';
   });
 
   return { html: sanitizeHtml(html), urls };
-}
-
-// ─── Valida URL de imagem ──────────────────────────────────
-function isImageUrlAllowed(url) {
-  if (!url) return false;
-  try {
-    const urlObj = new URL(url);
-    const allowedDomains = ['cdn.dio.me', 'enem.dev', 'i.imgur.com', 'ibb.co', 'imgur.com', 'upload.wikimedia.org'];
-    return allowedDomains.some(domain => urlObj.hostname.endsWith(domain)) || url.startsWith('data:image/');
-  } catch (e) {
-    return false;
-  }
 }
 
 // ─── Prefetch: pré-carregar imagens da próxima questão ─────
@@ -170,7 +171,7 @@ function renderQuestion(index) {
   document.getElementById('q-current').textContent = index + 1;
   document.getElementById('q-num').textContent = `Questão ${index + 1}`;
   document.getElementById('q-year').textContent = q.ano ? `ENEM ${q.ano}` : 'ENEM';
-  document.getElementById('q-disciplina').textContent = CATEGORY_LABELS[q.disciplina] || escapeHtml(q.disciplina) || '';
+  document.getElementById('q-disciplina').textContent = CATEGORY_LABELS[q.disciplina] || q.disciplina || '';
 
   // Progresso
   const pct = Math.round(((index + 1) / totalCount) * 100);
@@ -203,6 +204,7 @@ function renderQuestion(index) {
       const img = document.createElement('img');
       img.src = url;
       img.className = 'question-main-img';
+      img.alt = 'Imagem complementar da questão';
       img.onerror = () => img.style.display = 'none';
       imgWrap.appendChild(img);
     });

@@ -25,6 +25,7 @@ O ENEM Speedrun nasceu de um problema real: a preparação para o ENEM é maçan
 
 - **Autenticação completa** — cadastro, login e sessões protegidas com JWT
 - **Simulados com questões do ENEM** — banco de questões real com correção automática
+- **Cadernos oficiais** — acesso direto aos PDFs originais publicados pelo Inep
 - **Sistema de conquistas** — progressão de Bronze a Diamante baseada em desempenho, validada no servidor
 - **Ranking / Leaderboard** — classificação em tempo real entre todos os usuários
 - **Banco de dados persistente** — dados armazenados e gerenciados via Supabase + PostgreSQL

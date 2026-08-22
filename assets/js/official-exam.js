@@ -2,7 +2,7 @@
 //
 // IMPORTANTE:
 // - Os arquivos não são copiados para o projeto.
-// - O iframe aponta diretamente para riep.inep.gov.br.
+// - Os links apontam diretamente para riep.inep.gov.br.
 // - Para adicionar novos anos/cadernos, basta inserir novas entradas abaixo.
 
 const OFFICIAL_EXAMS = [
@@ -27,19 +27,23 @@ const OFFICIAL_EXAMS = [
 const yearSelect = document.getElementById('official-year');
 const daySelect = document.getElementById('official-day');
 const bookletSelect = document.getElementById('official-booklet');
-const frame = document.getElementById('pdf-frame');
 const title = document.getElementById('pdf-title');
 const externalLink = document.getElementById('open-external');
-const loadButton = document.getElementById('load-official');
+const sourceLink = document.getElementById('source-link');
+const selectionStatus = document.getElementById('selection-status');
 
 function unique(values) {
   return [...new Set(values)];
 }
 
 function fillSelect(select, values, formatter = String) {
-  select.innerHTML = values.map(value =>
-    `<option value="${String(value)}">${formatter(value)}</option>`
-  ).join('');
+  const options = values.map(value => {
+    const option = document.createElement('option');
+    option.value = String(value);
+    option.textContent = formatter(value);
+    return option;
+  });
+  select.replaceChildren(...options);
 }
 
 function examsForCurrentYear() {
@@ -56,6 +60,7 @@ function refreshBooklets() {
   const exams = examsForCurrentYear().filter(exam => exam.day === Number(daySelect.value));
   const booklets = unique(exams.map(exam => exam.booklet));
   fillSelect(bookletSelect, booklets);
+  loadExam();
 }
 
 function selectedExam() {
@@ -68,11 +73,22 @@ function selectedExam() {
 
 function loadExam() {
   const exam = selectedExam();
-  if (!exam) return;
+  if (!exam) {
+    title.textContent = 'Caderno indisponível';
+    selectionStatus.textContent = 'Não encontramos um PDF para esta combinação.';
+    externalLink.removeAttribute('href');
+    sourceLink.removeAttribute('href');
+    externalLink.setAttribute('aria-disabled', 'true');
+    sourceLink.setAttribute('aria-disabled', 'true');
+    return;
+  }
 
   title.textContent = exam.title;
-  frame.src = `${exam.pdf}#view=FitH`;
   externalLink.href = exam.pdf;
+  sourceLink.href = exam.source;
+  externalLink.removeAttribute('aria-disabled');
+  sourceLink.removeAttribute('aria-disabled');
+  selectionStatus.textContent = `${exam.year} · ${exam.day}º dia · Caderno ${exam.booklet}`;
 }
 
 const years = unique(OFFICIAL_EXAMS.map(exam => exam.year)).sort((a, b) => b - a);
@@ -82,5 +98,4 @@ loadExam();
 
 yearSelect.addEventListener('change', refreshDays);
 daySelect.addEventListener('change', refreshBooklets);
-loadButton.addEventListener('click', loadExam);
-
+bookletSelect.addEventListener('change', loadExam);

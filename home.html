@@ -50,6 +50,7 @@
     }
 
     .group-card {
+      display: block;
       background: var(--branco);
       border: 2px solid var(--cinza-borda);
       border-radius: var(--radius-lg);
@@ -57,6 +58,8 @@
       cursor: pointer;
       transition: all var(--transition);
       text-align: center;
+      text-decoration: none;
+      color: inherit;
     }
 
     .group-card:hover {
@@ -251,11 +254,11 @@
     <!-- Grupos principais -->
     <div class="section-label">Modo de prova</div>
     <div class="groups-grid">
-      <div class="group-card" onclick="openOfficialExam()">
+      <a class="group-card" href="official-exam.html">
         <div class="gc-icon">🏛️</div>
         <div class="gc-title">Prova Oficial</div>
         <div class="gc-desc">Cadernos completos em PDF direto do INEP</div>
-      </div>
+      </a>
       <div class="group-card" data-category="completa" onclick="selectGroup(this)">
         <div class="gc-icon">📋</div>
         <div class="gc-title">Prova Completa</div>

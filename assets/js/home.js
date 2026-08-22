@@ -27,11 +27,6 @@ if (user) {
 let selectedCategory = null;
 let selectedCount = null;
 
-// ─── Modo Prova Oficial (PDFs do INEP) ─────────────────────
-function openOfficialExam() {
-  window.location.href = 'official-exam.html';
-}
-
 // ─── Seleciona grupo ───────────────────────────────────────
 function selectGroup(el) {
   document.querySelectorAll('.group-card').forEach(c => c.classList.remove('selected'));
