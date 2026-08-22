@@ -44,7 +44,7 @@
     /* ─── Grid de grupos ───────────────────────────── */
     .groups-grid {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(4, 1fr);
       gap: 14px;
       margin-bottom: 32px;
     }
@@ -251,6 +251,11 @@
     <!-- Grupos principais -->
     <div class="section-label">Modo de prova</div>
     <div class="groups-grid">
+      <div class="group-card" onclick="openOfficialExam()">
+        <div class="gc-icon">🏛️</div>
+        <div class="gc-title">Prova Oficial</div>
+        <div class="gc-desc">Cadernos completos em PDF direto do INEP</div>
+      </div>
       <div class="group-card" data-category="completa" onclick="selectGroup(this)">
         <div class="gc-icon">📋</div>
         <div class="gc-title">Prova Completa</div>
