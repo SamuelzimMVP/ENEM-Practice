@@ -7,6 +7,7 @@
   <meta name="description" content="Escolha sua área e quantidade de questões para iniciar sua speedrun no ENEM." />
   <meta property="og:title" content="ENEM Speedrun — Início" />
   <meta property="og:type" content="website" />
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
   <link rel="stylesheet" href="assets/css/style.css" />
   <style>
     .welcome-banner {
@@ -44,12 +45,13 @@
     /* ─── Grid de grupos ───────────────────────────── */
     .groups-grid {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(4, 1fr);
       gap: 14px;
       margin-bottom: 32px;
     }
 
     .group-card {
+      display: block;
       background: var(--branco);
       border: 2px solid var(--cinza-borda);
       border-radius: var(--radius-lg);
@@ -57,6 +59,8 @@
       cursor: pointer;
       transition: all var(--transition);
       text-align: center;
+      text-decoration: none;
+      color: inherit;
     }
 
     .group-card:hover {
@@ -251,6 +255,11 @@
     <!-- Grupos principais -->
     <div class="section-label">Modo de prova</div>
     <div class="groups-grid">
+      <a class="group-card" href="official-exam.html">
+        <div class="gc-icon">🏛️</div>
+        <div class="gc-title">Prova Oficial</div>
+        <div class="gc-desc">Cadernos completos em PDF direto do INEP</div>
+      </a>
       <div class="group-card" data-category="completa" onclick="selectGroup(this)">
         <div class="gc-icon">📋</div>
         <div class="gc-title">Prova Completa</div>

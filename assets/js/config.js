@@ -2,6 +2,13 @@
 // ENEM Speedrun — Configuração Global
 // ═══════════════════════════════════════════════════════════
 
+// ─── Escape de conteúdo dinâmico ──────────────────────────
+function escapeHtml(value) {
+  const div = document.createElement('div');
+  div.textContent = value === null || value === undefined ? '' : String(value);
+  return div.innerHTML;
+}
+
 // ─── URL do Backend ────────────────────────────────────────
 // Detecta automaticamente pelo hostname para suportar múltiplos deploys
 function getApiBase() {

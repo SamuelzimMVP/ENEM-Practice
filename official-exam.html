@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ENEM Speedrun — Prova Oficial</title>
+  <meta name="description" content="Resolva cadernos oficiais do ENEM publicados pelo Inep." />
+  <meta property="og:title" content="ENEM Speedrun — Prova Oficial" />
+  <meta property="og:description" content="Acesse os cadernos originais do ENEM publicados pelo Inep." />
+  <meta property="og:type" content="website" />
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
+  <link rel="stylesheet" href="assets/css/style.css" />
+  <style>
+    .official-wrap { padding: 28px 0 48px; }
+    .official-head {
+      background: var(--branco);
+      border: 1px solid var(--cinza-borda);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      margin-bottom: 18px;
+      box-shadow: var(--sombra-card);
+    }
+    .official-head h1 { color: var(--azul-escuro); margin-bottom: 6px; font-size: 1.45rem; }
+    .official-head p { color: var(--texto-medio); line-height: 1.55; }
+    .official-badge {
+      display: inline-block;
+      margin-top: 10px;
+      padding: 5px 10px;
+      border-radius: 999px;
+      background: #e8f0ff;
+      color: var(--azul-primario);
+      font-size: .78rem;
+      font-weight: 700;
+    }
+    .official-controls {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 12px;
+      align-items: end;
+      background: var(--branco);
+      border: 1px solid var(--cinza-borda);
+      border-radius: var(--radius-lg);
+      padding: 18px;
+      margin-bottom: 18px;
+    }
+    .official-field label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: .78rem;
+      font-weight: 700;
+      color: var(--texto-medio);
+    }
+    .official-field select {
+      width: 100%;
+      min-height: 42px;
+      border: 1px solid var(--cinza-borda);
+      border-radius: var(--radius);
+      padding: 8px 10px;
+      background: var(--branco);
+      color: var(--texto-escuro);
+    }
+    .exam-card {
+      background: var(--branco);
+      border: 1px solid var(--cinza-borda);
+      border-radius: var(--radius-lg);
+      padding: 28px;
+      box-shadow: var(--sombra-card);
+      text-align: center;
+    }
+    .exam-icon { font-size: 3rem; margin-bottom: 10px; }
+    .exam-card h2 { color: var(--azul-escuro); margin-bottom: 8px; }
+    .exam-card p { color: var(--texto-medio); line-height: 1.55; }
+    .exam-actions {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin: 22px 0 14px;
+    }
+    .embed-note {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 12px 14px;
+      border-radius: var(--radius);
+      background: #f4f6fa;
+    }
+    .source-note { font-size: .78rem; color: var(--cinza-medio); }
+    @media (max-width: 850px) {
+      .official-controls { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 560px) {
+      .official-controls { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="gov-bar">
+    <div class="container">
+      <div class="gov-logo">🇧🇷 <span>gov.br</span> &nbsp;|&nbsp; Fonte oficial: Inep</div>
+    </div>
+  </div>
+
+  <header class="site-header">
+    <div class="container">
+      <div class="header-inner">
+        <a href="home.html" class="brand">
+          <div class="brand-icon">
+            <svg viewBox="0 0 24 24"><path d="M12 2L2 7v10l10 5 10-5V7L12 2zM12 4.2L20 8v8l-8 4-8-4V8l8-3.8z"/></svg>
+          </div>
+          <div class="brand-text">
+            <span class="brand-title">ENEM Speedrun</span>
+            <span class="brand-subtitle">Prova Oficial</span>
+          </div>
+        </a>
+        <nav>
+          <a href="home.html">Início</a>
+          <a href="official-exam.html" class="active">Prova Oficial</a>
+          <a href="ranking.html">Ranking</a>
+        </nav>
+      </div>
+    </div>
+  </header>
+
+  <main class="official-wrap">
+    <div class="container">
+      <section class="official-head">
+        <h1>Prova Oficial do ENEM</h1>
+        <p>
+          Abra o caderno original, sem questões reformatadas. Os PDFs abaixo são servidos
+          diretamente pelo Repositório Institucional do Inep.
+        </p>
+        <span class="official-badge">Fonte: Instituto Nacional de Estudos e Pesquisas Educacionais Anísio Teixeira</span>
+      </section>
+
+      <section class="official-controls">
+        <div class="official-field">
+          <label for="official-year">Ano</label>
+          <select id="official-year"></select>
+        </div>
+        <div class="official-field">
+          <label for="official-day">Dia</label>
+          <select id="official-day"></select>
+        </div>
+        <div class="official-field">
+          <label for="official-booklet">Caderno</label>
+          <select id="official-booklet"></select>
+        </div>
+      </section>
+
+      <section class="exam-card" aria-labelledby="pdf-title">
+        <div class="exam-icon" aria-hidden="true">📄</div>
+        <h2 id="pdf-title">ENEM 2025 — 1º dia — Caderno Amarelo</h2>
+        <p id="selection-status" class="source-note" aria-live="polite"></p>
+        <div class="exam-actions">
+          <a id="open-external" class="btn btn-primary" target="_blank" rel="noopener noreferrer">
+            Abrir PDF oficial
+          </a>
+          <a id="source-link" class="btn btn-outline" target="_blank" rel="noopener noreferrer">
+            Ver página no Inep
+          </a>
+        </div>
+        <p class="embed-note">
+          O documento abre em uma nova aba porque o Repositório do Inep bloqueia a exibição
+          incorporada em sites externos. Assim você acessa o arquivo original, sem cópias ou intermediários.
+        </p>
+      </section>
+    </div>
+  </main>
+
+  <footer>
+    <div class="container">
+      <strong>ENEM Speedrun</strong> — Projeto independente. Este modo apenas exibe documentos oficiais hospedados pelo Inep.
+    </div>
+  </footer>
+
+  <script src="assets/js/config.js"></script>
+  <script src="assets/js/official-exam.js"></script>
+</body>
+</html>
